@@ -49,7 +49,7 @@ cat highways-ways.osm | ./osmtograph --format | ./osmtograph --links > links
 #### combine nodes and links into a graph
 
 ```sh
-cat nodes.txt links.txt > graph.txt
+cat nodes.txt links > graph
 ```
 
 #### extract ways
