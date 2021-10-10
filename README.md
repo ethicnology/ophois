@@ -1,5 +1,5 @@
 # osmtograph
-
+![](https://github.com/ethicnology/osmtograph/blob/main/osmtograph-polylines.png?raw=true)
 ## prerequisites
 
 - [Osmium Tool](https://osmcode.org/osmium-tool/) or a filtered by highways
