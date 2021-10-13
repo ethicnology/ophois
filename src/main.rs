@@ -129,6 +129,7 @@ fn extract_nodes() {
                             let s = format!("{}{}{}{}", SEPARATOR, tag.k, SEPARATOR, tag.v);
                             data.push_str(&s);
                         }
+                        data = data.replace('\n', " ").replace('\r', " ");
                     }
                 }
                 None => (),
@@ -173,6 +174,7 @@ fn extract_ways() {
                             let s = format!("{}{}{}{}", SEPARATOR, tag.k, SEPARATOR, tag.v);
                             data.push_str(&s);
                         }
+                        data = data.replace('\n', " ").replace('\r', " ");
                     }
                 }
                 None => (),
