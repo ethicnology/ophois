@@ -1,9 +1,16 @@
 [package]
 name = "osmtograph"
-version = "0.1.0"
+version = "0.1.1"
+authors = ["Jules Azad EMERY a.k.a. ethicnology <ethicnology@pm.me>"]
 edition = "2018"
+description = "osmtograph extract streets graph object from OpenStreetMap data"
+readme = "README.md"
+repository = "https://github.com/ethicnology/osmtograph"
+license = "GPL-3.0-or-later"
+license-file = "LICENSE"
+keywords = ["OpenStreetMap", "OSM", "graph", "streets", "network", "map"]
+categories = ["command-line-utilities"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 structopt = "0.3"
