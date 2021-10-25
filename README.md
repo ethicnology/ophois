@@ -1,5 +1,7 @@
 # osmtograph
-![](https://github.com/ethicnology/osmtograph/blob/main/osmtograph-polylines.png?raw=true)
+
+![](https://github.com/ethicnology/osmtograph/blob/main/assets/osmtograph-polylines.png?raw=true)
+
 ## prerequisites
 
 - [Osmium Tool](https://osmcode.org/osmium-tool/) or a filtered by highways
@@ -26,7 +28,7 @@ cargo build --release
 
 #### export a map from [OpenStreetMap](https://www.openstreetmap.org)
 
-![](https://github.com/ethicnology/osmtograph/blob/main/osmtograph-input.png?raw=true)
+![](https://github.com/ethicnology/osmtograph/blob/main/assets/osmtograph-input.png?raw=true)
 
 #### extract ways of type [highway](https://wiki.openstreetmap.org/wiki/Key:highway) from your map
 
@@ -46,16 +48,16 @@ cat highways-ways.osm | ./osmtograph --format | ./osmtograph --nodes > nodes
 cat highways-ways.osm | ./osmtograph --format | ./osmtograph --links > links
 ```
 
-#### combine nodes and links into a graph
-
-```sh
-cat nodes.txt links > graph
-```
-
 #### extract ways
 
 ```sh
 cat highways-ways.osm | ./osmtograph --format | ./osmtograph --ways > ways
+```
+
+#### combine nodes and links into a graph
+
+```sh
+cat nodes.txt links > graph
 ```
 
 ## output
@@ -63,9 +65,9 @@ cat highways-ways.osm | ./osmtograph --format | ./osmtograph --ways > ways
 ### graph file
 
 ```sh
-node_id␟key␟value␟key␟value… #represents a node and his data
-node_id␟key␟value
-node_id␟key␟value␟key␟value…
+node_id␟lat␟48.8279975␟lon␟2.3518307␟key␟value… #represents a node and his data
+node_id␟lat␟48.8279975␟lon␟2.3518307
+node_id␟lat␟48.8279975␟lon␟2.3518307␟key␟value␟key␟value…
 node_id␟node_id␟way_id #represents a link/edge
 node_id␟node_id␟way_id
 ```
@@ -190,7 +192,7 @@ way_id
 965882503␟crossing␟marked␟footway␟crossing␟highway␟footway␟surface␟asphalt
 ```
 
-![](https://github.com/ethicnology/osmtograph/blob/main/osmtograph-output.png?raw=true)
+![](https://github.com/ethicnology/osmtograph/blob/main/assets/osmtograph-output.png?raw=true)
 
 > **_NOTE:_** As you can see they are many nodes with a
 > [degree](https://en.wikipedia.org/wiki/Degree_(graph_theory)) equal to two.

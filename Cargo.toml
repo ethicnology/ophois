@@ -7,7 +7,6 @@ description = "osmtograph extract streets graph object from OpenStreetMap data"
 readme = "README.md"
 repository = "https://github.com/ethicnology/osmtograph"
 license = "GPL-3.0-or-later"
-license-file = "LICENSE"
 keywords = ["OpenStreetMap", "OSM", "graph", "streets", "network", "map"]
 categories = ["command-line-utilities"]
 
