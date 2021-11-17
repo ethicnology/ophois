@@ -13,8 +13,10 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+#![feature(destructuring_assignment)]
 use quick_xml::de::from_str;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -33,8 +35,8 @@ enum OsmToGraph {
     Links,
     /// Extract ways data : way_id␟key␟value␟key␟value…
     Ways,
-    /// Applies 3 heuristics which removes degree two nodes, nodes < delta and links < delta.
-    Heuristics {
+    /// Apply following heuristic which remove degree two nodes, nodes < delta and links < delta.
+    Heuristic {
         /// Delta is expressed in meters.
         #[structopt(short, long)]
         delta: f64,
@@ -46,7 +48,8 @@ struct Point {
     latitude: f64,
     longitude: f64,
 }
-#[derive(Clone)]
+
+#[derive(Clone, Eq, Hash, PartialEq)]
 struct Node {
     id: String,
     lat: String,
@@ -215,87 +218,201 @@ fn deterministic_link(source: &str, target: &str) -> (String, String) {
     link
 }
 
-fn remove_degree_two_nodes(mut graph: HashMap<String, Node>) -> HashMap<String, Node> {
-    let mut two_degree_nodes: Vec<String> = Vec::new();
-    for (id, node) in graph.iter() {
-        if node.neighbours.len() == 2 {
-            two_degree_nodes.push(id.to_owned());
-        }
-    }
-    for id in two_degree_nodes {
-        graph = replace_node_by_links(graph, id);
-    }
-    graph
-}
-
-fn remove_under_delta_nodes(mut graph: HashMap<String, Node>, delta: f64) -> HashMap<String, Node> {
-    let mut under_delta_nodes: Vec<String> = Vec::new();
-    for (id, node) in graph.iter() {
-        let start = Point {
-            latitude: node.lat.parse().unwrap(),
-            longitude: node.lon.parse().unwrap(),
-        };
-        let mut remove = true;
-        for neighbour_id in &node.neighbours {
-            let neighbour = graph.get(neighbour_id).unwrap();
-            let end = Point {
-                latitude: neighbour.lat.parse().unwrap(),
-                longitude: node.lon.parse().unwrap(),
-            };
-            let distance = compute_distance(start.clone(), end);
-            if distance > delta {
-                remove = false;
-            }
-        }
-        if remove {
-            under_delta_nodes.push(id.to_owned());
-            remove = true;
-        }
-    }
-    for id in under_delta_nodes {
-        graph = replace_node_by_links(graph, id);
-    }
-    graph
-}
-
-fn replace_node_by_links(mut graph: HashMap<String, Node>, id: String) -> HashMap<String, Node> {
-    let node = graph.get(&id).unwrap().clone();
-    graph.remove(&node.id);
-    for current in 0..node.neighbours.len() {
-        graph
-            .entry(node.neighbours[current].clone())
-            .and_modify(|e| {
-                let id_index = e.neighbours.iter().position(|value| *value == id).unwrap();
-                e.neighbours.swap_remove(id_index);
-            });
-        for next in current + 1..node.neighbours.len() {
-            graph
-                .entry(node.neighbours[current].clone())
-                .and_modify(|e| e.neighbours.push(node.neighbours[next].clone()));
-            graph
-                .entry(node.neighbours[next].clone())
-                .and_modify(|e| e.neighbours.push(node.neighbours[current].clone()));
-        }
-    }
-    graph
-}
-
 // Haversine formula
 fn compute_distance(start: Point, end: Point) -> f64 {
     let r: f64 = 6356752.0; // earth radius in meters
     let d_lat: f64 = (end.latitude - start.latitude).to_radians();
     let d_lon: f64 = (end.longitude - start.longitude).to_radians();
-    let lat1: f64 = (start.latitude).to_radians();
-    let lat2: f64 = (end.latitude).to_radians();
-
+    let lat1: f64 = start.latitude.to_radians();
+    let lat2: f64 = end.latitude.to_radians();
     let a: f64 = ((d_lat / 2.0).sin()) * ((d_lat / 2.0).sin())
         + ((d_lon / 2.0).sin()) * ((d_lon / 2.0).sin()) * (lat1.cos()) * (lat2.cos());
     let c: f64 = 2.0 * ((a.sqrt()).atan2((1.0 - a).sqrt()));
     return r * c;
 }
 
-fn load_graph() -> HashMap<String, Node> {
-    let mut graph: HashMap<String, Node> = HashMap::new();
+fn midpoint(start: Point, end: Point) -> Point {
+    Point {
+        latitude: (start.latitude + end.latitude) / 2.0,
+        longitude: (start.longitude + end.longitude) / 2.0,
+    }
+}
+
+fn remove_degree_two_nodes(
+    mut nodes: HashMap<String, Node>,
+    mut links: HashSet<(String, String)>,
+) -> (HashMap<String, Node>, HashSet<(String, String)>) {
+    let mut two_degree_nodes: Vec<String> = Vec::new();
+    for (id, node) in nodes.iter() {
+        if node.neighbours.len() == 2 {
+            two_degree_nodes.push(id.clone());
+        }
+    }
+    for to_delete in two_degree_nodes {
+        (nodes, links) = replace_node_by_links(nodes, links, to_delete.clone());
+    }
+    (nodes, links)
+}
+
+fn remove_under_delta_nodes(
+    mut nodes: HashMap<String, Node>,
+    mut links: HashSet<(String, String)>,
+    delta: f64,
+) -> (HashMap<String, Node>, HashSet<(String, String)>) {
+    let mut shuffled_nodes: Vec<String> = nodes.keys().cloned().collect();
+    let mut rng = thread_rng();
+    shuffled_nodes.shuffle(&mut rng);
+    for node_id in shuffled_nodes {
+        let node = nodes.get(&node_id).unwrap();
+        let start = Point {
+            latitude: node.lat.parse().unwrap(),
+            longitude: node.lon.parse().unwrap(),
+        };
+        let mut remove = true;
+        for neighbour_id in &node.neighbours {
+            if links.contains(&deterministic_link(&node_id, &neighbour_id)) {
+                let neighbour = nodes.get(neighbour_id).unwrap();
+                let end = Point {
+                    latitude: neighbour.lat.parse().unwrap(),
+                    longitude: neighbour.lon.parse().unwrap(),
+                };
+                let distance = compute_distance(start.clone(), end);
+                if distance > delta {
+                    remove = false;
+                    break;
+                }
+            }
+        }
+        if remove {
+            (nodes, links) = replace_node_by_links(nodes, links, node_id.clone());
+        }
+    }
+    (nodes, links)
+}
+
+fn replace_node_by_links(
+    mut nodes: HashMap<String, Node>,
+    mut links: HashSet<(String, String)>,
+    node_id: String,
+) -> (HashMap<String, Node>, HashSet<(String, String)>) {
+    let eliminated_neighbours = nodes.get(&node_id).unwrap().neighbours.clone();
+    nodes.remove(&node_id);
+    for current in eliminated_neighbours.iter() {
+        links.remove(&deterministic_link(current, &node_id));
+        for next in eliminated_neighbours.iter() {
+            if !links.contains(&deterministic_link(current, next))
+                && current != next
+                && nodes.contains_key(current)
+                && nodes.contains_key(next)
+            {
+                links.insert(deterministic_link(current, next));
+                let source = nodes.get_mut(current).unwrap();
+                source.neighbours.push(next.clone());
+                let target = nodes.get_mut(next).unwrap();
+                target.neighbours.push(current.clone());
+            }
+        }
+    }
+    (nodes, links)
+}
+
+fn remove_under_delta_links(
+    mut nodes: HashMap<String, Node>,
+    mut links: HashSet<(String, String)>,
+    delta: f64,
+) -> (HashMap<String, Node>, HashSet<(String, String)>) {
+    let mut is_link_below_delta = true;
+    while is_link_below_delta {
+        let mut shuffled_links: Vec<(String, String)> = links.clone().into_iter().collect();
+        let mut rng = thread_rng();
+        shuffled_links.shuffle(&mut rng);
+        for link in shuffled_links.iter() {
+            if links.contains(link) {
+                let source = nodes.get(&link.0).unwrap();
+                let target = nodes.get(&link.1).unwrap();
+                let distance = compute_distance(
+                    Point {
+                        latitude: source.lat.parse().unwrap(),
+                        longitude: source.lon.parse().unwrap(),
+                    },
+                    Point {
+                        latitude: target.lat.parse().unwrap(),
+                        longitude: target.lon.parse().unwrap(),
+                    },
+                );
+                if distance < delta {
+                    (nodes, links) = replace_link_by_node(nodes, links, link.clone());
+                }
+            }
+        }
+        is_link_below_delta = false;
+        for link in links.iter() {
+            let source = nodes.get(&link.0).unwrap();
+            let target = nodes.get(&link.1).unwrap();
+            let distance = compute_distance(
+                Point {
+                    latitude: source.lat.parse().unwrap(),
+                    longitude: source.lon.parse().unwrap(),
+                },
+                Point {
+                    latitude: target.lat.parse().unwrap(),
+                    longitude: target.lon.parse().unwrap(),
+                },
+            );
+            if distance < delta {
+                is_link_below_delta = true;
+            }
+        }
+    }
+    (nodes, links)
+}
+
+fn replace_link_by_node(
+    mut nodes: HashMap<String, Node>,
+    mut links: HashSet<(String, String)>,
+    link: (String, String),
+) -> (HashMap<String, Node>, HashSet<(String, String)>) {
+    let source = nodes.get(&link.0).unwrap().clone();
+    let target = nodes.get(&link.1).unwrap().clone();
+    nodes.remove(&source.id);
+    nodes.remove(&target.id);
+    links.remove(&link);
+    let mut new_neighbours = [&source.neighbours[..], &target.neighbours[..]].concat();
+    new_neighbours.sort_unstable();
+    new_neighbours.dedup();
+    let new_node_id = format!("{}-{}", source.id, target.id);
+    for neighbour_id in new_neighbours.iter() {
+        if nodes.contains_key(neighbour_id) {
+            links.insert(deterministic_link(&new_node_id, &neighbour_id));
+            links.remove(&deterministic_link(&source.id, &neighbour_id));
+            links.remove(&deterministic_link(&target.id, &neighbour_id));
+            let neighbour = nodes.get_mut(neighbour_id).unwrap();
+            neighbour.neighbours.push(new_node_id.clone());
+        }
+    }
+    let midpoint: Point = midpoint(
+        Point {
+            latitude: source.lat.parse().unwrap(),
+            longitude: source.lon.parse().unwrap(),
+        },
+        Point {
+            latitude: target.lat.parse().unwrap(),
+            longitude: target.lon.parse().unwrap(),
+        },
+    );
+    nodes.entry(new_node_id.clone()).or_insert(Node {
+        id: new_node_id.clone(),
+        lat: midpoint.latitude.to_string(),
+        lon: midpoint.longitude.to_string(),
+        neighbours: new_neighbours.clone(),
+        data: "null".to_string(),
+    });
+    (nodes, links)
+}
+
+fn load_graph() -> (HashMap<String, Node>, HashSet<(String, String)>) {
+    let mut nodes: HashMap<String, Node> = HashMap::new();
+    let mut links: HashSet<(String, String)> = HashSet::new();
     let input = io::stdin();
     for line in input.lock().lines() {
         let line = line.unwrap();
@@ -304,42 +421,40 @@ fn load_graph() -> HashMap<String, Node> {
             3 => {
                 let source = data[0].to_owned();
                 let target = data[1].to_owned();
-                graph
+                assert_ne!(&source, &target);
+                nodes
                     .entry(source.to_owned())
                     .and_modify(|e| e.neighbours.push(target.clone()));
-                graph
+                nodes
                     .entry(target.to_owned())
                     .and_modify(|e| e.neighbours.push(source.clone()));
+                links.insert(deterministic_link(&source, &target));
             }
             _ => {
-                graph.entry(data[0].to_owned()).or_insert(Node {
+                nodes.entry(data[0].to_owned()).or_insert(Node {
                     id: data[0].to_owned(),
                     lat: data[2].to_owned(),
                     lon: data[4].to_owned(),
-                    data: data[5..].join(&SEPARATOR.to_string()),
+                    data: "null".to_string(),
                     neighbours: Vec::new(),
                 });
             }
         }
     }
-    graph
+    (nodes, links)
 }
 
-fn print_graph(graph: HashMap<String, Node>) {
-    let mut links: HashSet<(String, String)> = HashSet::new();
-    for (id, node) in graph.into_iter() {
-        println!("{}{}{}{}{}", id, SEPARATOR, node.lat, SEPARATOR, node.lon,);
-        for source in 0..node.neighbours.len() - 1 {
-            for target in 1..node.neighbours.len() {
-                links.insert(deterministic_link(
-                    &node.neighbours[source],
-                    &node.neighbours[target],
-                ));
-            }
-        }
+fn print_graph(nodes: HashMap<String, Node>, links: HashSet<(String, String)>) {
+    for (id, node) in nodes {
+        println!(
+            "{}{}{}{}{}{}{}{}{}",
+            id, SEPARATOR, "lat", SEPARATOR, node.lat, SEPARATOR, "lon", SEPARATOR, node.lon,
+        )
     }
     for link in links {
-        println!("{}{}{}", link.0, SEPARATOR, link.1);
+        let source = link.0;
+        let target = link.1;
+        println!("{}{}{}", source, SEPARATOR, target);
     }
 }
 
@@ -349,11 +464,12 @@ fn main() {
         OsmToGraph::Nodes => extract_nodes(),
         OsmToGraph::Links => extract_links(),
         OsmToGraph::Ways => extract_ways(),
-        OsmToGraph::Heuristics { delta } => {
-            let mut graph = load_graph();
-            graph = remove_degree_two_nodes(graph);
-            graph = remove_under_delta_nodes(graph, delta);
-            print_graph(graph)
+        OsmToGraph::Heuristic { delta } => {
+            let (mut nodes, mut links) = load_graph();
+            (nodes, links) = remove_degree_two_nodes(nodes, links);
+            (nodes, links) = remove_under_delta_nodes(nodes, links, delta);
+            (nodes, links) = remove_under_delta_links(nodes, links, delta);
+            print_graph(nodes, links)
         }
     }
 }
