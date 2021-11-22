@@ -48,8 +48,8 @@ enum OsmToGraph {
 #[derive(Clone, Eq, Hash, PartialEq)]
 struct Node {
     id: String,
-    lat: String,
-    lon: String,
+    latitude: String,
+    longitude: String,
     neighbours: Vec<String>,
     data: String,
 }
@@ -213,10 +213,10 @@ fn deterministic_link(source: &str, target: &str) -> (String, String) {
 }
 
 fn haversine_distance(start: &Node, end: &Node) -> f32 {
-    let latitude1: f32 = start.lat.parse().unwrap();
-    let latitude2: f32 = end.lat.parse().unwrap();
-    let longitude1: f32 = start.lon.parse().unwrap();
-    let longitude2: f32 = end.lon.parse().unwrap();
+    let latitude1: f32 = start.latitude.parse().unwrap();
+    let latitude2: f32 = end.latitude.parse().unwrap();
+    let longitude1: f32 = start.longitude.parse().unwrap();
+    let longitude2: f32 = end.longitude.parse().unwrap();
     let r: f32 = 6356752.0; // earth radius in meters
     let d_lat: f32 = (latitude2 - latitude1).to_radians();
     let d_lon: f32 = (longitude2 - longitude1).to_radians();
@@ -229,10 +229,10 @@ fn haversine_distance(start: &Node, end: &Node) -> f32 {
 }
 
 fn midpoint(start: &Node, end: &Node) -> (f32, f32) {
-    let latitude1: f32 = start.lat.parse().unwrap();
-    let latitude2: f32 = end.lat.parse().unwrap();
-    let longitude1: f32 = start.lon.parse().unwrap();
-    let longitude2: f32 = end.lon.parse().unwrap();
+    let latitude1: f32 = start.latitude.parse().unwrap();
+    let latitude2: f32 = end.latitude.parse().unwrap();
+    let longitude1: f32 = start.longitude.parse().unwrap();
+    let longitude2: f32 = end.longitude.parse().unwrap();
     return (
         (latitude1 + latitude2) / 2.0,
         (longitude1 + longitude2) / 2.0,
@@ -368,8 +368,8 @@ fn replace_link_by_node(
     let midpoint = midpoint(&source, &target);
     nodes.entry(new_node_id.clone()).or_insert(Node {
         id: new_node_id.clone(),
-        lat: midpoint.0.to_string(),
-        lon: midpoint.1.to_string(),
+        latitude: midpoint.0.to_string(),
+        longitude: midpoint.1.to_string(),
         neighbours: new_neighbours.clone(),
         data: "null".to_string(),
     });
@@ -399,8 +399,8 @@ fn load_graph() -> (HashMap<String, Node>, HashSet<(String, String)>) {
             _ => {
                 nodes.entry(data[0].to_owned()).or_insert(Node {
                     id: data[0].to_owned(),
-                    lat: data[2].to_owned(),
-                    lon: data[4].to_owned(),
+                    latitude: data[2].to_owned(),
+                    longitude: data[4].to_owned(),
                     data: "null".to_string(),
                     neighbours: Vec::new(),
                 });
@@ -456,7 +456,7 @@ fn print_graph(nodes: &HashMap<String, Node>, links: &HashSet<(String, String)>)
     for (id, node) in nodes {
         println!(
             "{}{}{}{}{}{}{}{}{}",
-            id, SEPARATOR, "lat", SEPARATOR, node.lat, SEPARATOR, "lon", SEPARATOR, node.lon,
+            id, SEPARATOR, "lat", SEPARATOR, node.latitude, SEPARATOR, "lon", SEPARATOR, node.longitude,
         )
     }
     for link in links {
