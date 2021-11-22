@@ -24,6 +24,8 @@ use std::io;
 use std::io::prelude::*;
 use structopt::StructOpt;
 
+static SEPARATOR: char = '␟';
+
 #[derive(StructOpt)]
 #[structopt(name = "osmtograph")]
 enum OsmToGraph {
@@ -35,18 +37,12 @@ enum OsmToGraph {
     Links,
     /// Extract ways data : way_id␟key␟value␟key␟value…
     Ways,
-    /// Apply following heuristic which remove degree two nodes, nodes < delta and links < delta.
-    Heuristic {
+    /// Apply following heuristics which replace degree two nodes, nodes under delta and links under delta.
+    Heuristics {
         /// Delta is expressed in meters.
         #[structopt(short, long)]
-        delta: f64,
+        delta: f32,
     },
-}
-
-#[derive(Clone)]
-struct Point {
-    latitude: f64,
-    longitude: f64,
 }
 
 #[derive(Clone, Eq, Hash, PartialEq)]
@@ -91,8 +87,6 @@ struct OsmTag {
     k: String,
     v: String,
 }
-
-static SEPARATOR: char = '␟';
 
 fn format_xml() {
     let mut data: String = "".to_owned();
@@ -215,27 +209,34 @@ fn deterministic_link(source: &str, target: &str) -> (String, String) {
     } else {
         (target.to_owned(), source.to_owned())
     };
-    link
+    return link;
 }
 
-// Haversine formula
-fn compute_distance(start: Point, end: Point) -> f64 {
-    let r: f64 = 6356752.0; // earth radius in meters
-    let d_lat: f64 = (end.latitude - start.latitude).to_radians();
-    let d_lon: f64 = (end.longitude - start.longitude).to_radians();
-    let lat1: f64 = start.latitude.to_radians();
-    let lat2: f64 = end.latitude.to_radians();
-    let a: f64 = ((d_lat / 2.0).sin()) * ((d_lat / 2.0).sin())
+fn haversine_distance(start: &Node, end: &Node) -> f32 {
+    let latitude1: f32 = start.lat.parse().unwrap();
+    let latitude2: f32 = end.lat.parse().unwrap();
+    let longitude1: f32 = start.lon.parse().unwrap();
+    let longitude2: f32 = end.lon.parse().unwrap();
+    let r: f32 = 6356752.0; // earth radius in meters
+    let d_lat: f32 = (latitude2 - latitude1).to_radians();
+    let d_lon: f32 = (longitude2 - longitude1).to_radians();
+    let lat1: f32 = latitude1.to_radians();
+    let lat2: f32 = latitude2.to_radians();
+    let a: f32 = ((d_lat / 2.0).sin()) * ((d_lat / 2.0).sin())
         + ((d_lon / 2.0).sin()) * ((d_lon / 2.0).sin()) * (lat1.cos()) * (lat2.cos());
-    let c: f64 = 2.0 * ((a.sqrt()).atan2((1.0 - a).sqrt()));
+    let c: f32 = 2.0 * ((a.sqrt()).atan2((1.0 - a).sqrt()));
     return r * c;
 }
 
-fn midpoint(start: Point, end: Point) -> Point {
-    Point {
-        latitude: (start.latitude + end.latitude) / 2.0,
-        longitude: (start.longitude + end.longitude) / 2.0,
-    }
+fn midpoint(start: &Node, end: &Node) -> (f32, f32) {
+    let latitude1: f32 = start.lat.parse().unwrap();
+    let latitude2: f32 = end.lat.parse().unwrap();
+    let longitude1: f32 = start.lon.parse().unwrap();
+    let longitude2: f32 = end.lon.parse().unwrap();
+    return (
+        (latitude1 + latitude2) / 2.0,
+        (longitude1 + longitude2) / 2.0,
+    );
 }
 
 fn remove_degree_two_nodes(
@@ -251,32 +252,24 @@ fn remove_degree_two_nodes(
     for to_delete in two_degree_nodes {
         (nodes, links) = replace_node_by_links(nodes, links, to_delete.clone());
     }
-    (nodes, links)
+    return (nodes, links);
 }
 
 fn remove_under_delta_nodes(
     mut nodes: HashMap<String, Node>,
     mut links: HashSet<(String, String)>,
-    delta: f64,
+    delta: f32,
 ) -> (HashMap<String, Node>, HashSet<(String, String)>) {
     let mut shuffled_nodes: Vec<String> = nodes.keys().cloned().collect();
     let mut rng = thread_rng();
     shuffled_nodes.shuffle(&mut rng);
     for node_id in shuffled_nodes {
         let node = nodes.get(&node_id).unwrap();
-        let start = Point {
-            latitude: node.lat.parse().unwrap(),
-            longitude: node.lon.parse().unwrap(),
-        };
         let mut remove = true;
         for neighbour_id in &node.neighbours {
             if links.contains(&deterministic_link(&node_id, &neighbour_id)) {
                 let neighbour = nodes.get(neighbour_id).unwrap();
-                let end = Point {
-                    latitude: neighbour.lat.parse().unwrap(),
-                    longitude: neighbour.lon.parse().unwrap(),
-                };
-                let distance = compute_distance(start.clone(), end);
+                let distance = haversine_distance(&node, &neighbour);
                 if distance > delta {
                     remove = false;
                     break;
@@ -287,7 +280,7 @@ fn remove_under_delta_nodes(
             (nodes, links) = replace_node_by_links(nodes, links, node_id.clone());
         }
     }
-    (nodes, links)
+    return (nodes, links);
 }
 
 fn replace_node_by_links(
@@ -313,13 +306,13 @@ fn replace_node_by_links(
             }
         }
     }
-    (nodes, links)
+    return (nodes, links);
 }
 
 fn remove_under_delta_links(
     mut nodes: HashMap<String, Node>,
     mut links: HashSet<(String, String)>,
-    delta: f64,
+    delta: f32,
 ) -> (HashMap<String, Node>, HashSet<(String, String)>) {
     let mut is_link_below_delta = true;
     while is_link_below_delta {
@@ -330,16 +323,7 @@ fn remove_under_delta_links(
             if links.contains(link) {
                 let source = nodes.get(&link.0).unwrap();
                 let target = nodes.get(&link.1).unwrap();
-                let distance = compute_distance(
-                    Point {
-                        latitude: source.lat.parse().unwrap(),
-                        longitude: source.lon.parse().unwrap(),
-                    },
-                    Point {
-                        latitude: target.lat.parse().unwrap(),
-                        longitude: target.lon.parse().unwrap(),
-                    },
-                );
+                let distance = haversine_distance(source, target);
                 if distance < delta {
                     (nodes, links) = replace_link_by_node(nodes, links, link.clone());
                 }
@@ -349,22 +333,13 @@ fn remove_under_delta_links(
         for link in links.iter() {
             let source = nodes.get(&link.0).unwrap();
             let target = nodes.get(&link.1).unwrap();
-            let distance = compute_distance(
-                Point {
-                    latitude: source.lat.parse().unwrap(),
-                    longitude: source.lon.parse().unwrap(),
-                },
-                Point {
-                    latitude: target.lat.parse().unwrap(),
-                    longitude: target.lon.parse().unwrap(),
-                },
-            );
+            let distance = haversine_distance(source, target);
             if distance < delta {
                 is_link_below_delta = true;
             }
         }
     }
-    (nodes, links)
+    return (nodes, links);
 }
 
 fn replace_link_by_node(
@@ -390,24 +365,15 @@ fn replace_link_by_node(
             neighbour.neighbours.push(new_node_id.clone());
         }
     }
-    let midpoint: Point = midpoint(
-        Point {
-            latitude: source.lat.parse().unwrap(),
-            longitude: source.lon.parse().unwrap(),
-        },
-        Point {
-            latitude: target.lat.parse().unwrap(),
-            longitude: target.lon.parse().unwrap(),
-        },
-    );
+    let midpoint = midpoint(&source, &target);
     nodes.entry(new_node_id.clone()).or_insert(Node {
         id: new_node_id.clone(),
-        lat: midpoint.latitude.to_string(),
-        lon: midpoint.longitude.to_string(),
+        lat: midpoint.0.to_string(),
+        lon: midpoint.1.to_string(),
         neighbours: new_neighbours.clone(),
         data: "null".to_string(),
     });
-    (nodes, links)
+    return (nodes, links);
 }
 
 fn load_graph() -> (HashMap<String, Node>, HashSet<(String, String)>) {
@@ -441,10 +407,52 @@ fn load_graph() -> (HashMap<String, Node>, HashSet<(String, String)>) {
             }
         }
     }
-    (nodes, links)
+    return (nodes, links);
 }
 
-fn print_graph(nodes: HashMap<String, Node>, links: HashSet<(String, String)>) {
+fn count_nodes(nodes: &HashMap<String, Node>) -> u32 {
+    return nodes.len() as u32;
+}
+
+fn count_links(links: &HashSet<(String, String)>) -> u32 {
+    return links.len() as u32;
+}
+
+fn degree_distribution(
+    nodes: &HashMap<String, Node>,
+    links: &HashSet<(String, String)>,
+) -> HashMap<u32, u32> {
+    let mut distribution: HashMap<u32, u32> = HashMap::new();
+    for (node_id, node) in nodes {
+        let mut degree = 0;
+        for neighbour_id in &node.neighbours {
+            if links.contains(&deterministic_link(&node_id, &neighbour_id)) {
+                degree += 1;
+            }
+        }
+        *distribution.entry(degree).or_insert(0) += 1;
+    }
+    return distribution;
+}
+
+fn links_length_distribution(
+    nodes: &HashMap<String, Node>,
+    links: &HashSet<(String, String)>,
+) -> HashMap<u32, u32> {
+    let mut distribution: HashMap<u32, u32> = HashMap::new();
+    for (node_id, node) in nodes.iter() {
+        for neighbour_id in &node.neighbours {
+            if links.contains(&deterministic_link(&node_id, &neighbour_id)) {
+                let neighbour = nodes.get(neighbour_id).unwrap();
+                let distance = haversine_distance(node, neighbour) as u32;
+                *distribution.entry(distance).or_insert(0) += 1;
+            }
+        }
+    }
+    return distribution;
+}
+
+fn print_graph(nodes: &HashMap<String, Node>, links: &HashSet<(String, String)>) {
     for (id, node) in nodes {
         println!(
             "{}{}{}{}{}{}{}{}{}",
@@ -452,10 +460,22 @@ fn print_graph(nodes: HashMap<String, Node>, links: HashSet<(String, String)>) {
         )
     }
     for link in links {
-        let source = link.0;
-        let target = link.1;
+        let source = &link.0;
+        let target = &link.1;
         println!("{}{}{}", source, SEPARATOR, target);
     }
+}
+
+fn metrics(nodes: &HashMap<String, Node>, links: &HashSet<(String, String)>, step: &str) {
+    let n = count_nodes(&nodes);
+    let m = count_links(&links);
+    let degree_distribution = degree_distribution(&nodes, &links);
+    let links_length = links_length_distribution(&nodes, &links);
+    eprint!("\nstep:{};", step);
+    eprint!("{};", n);
+    eprint!("{};", m);
+    eprint!("{:?};", degree_distribution);
+    eprint!("{:?}", links_length);
 }
 
 fn main() {
@@ -464,12 +484,16 @@ fn main() {
         OsmToGraph::Nodes => extract_nodes(),
         OsmToGraph::Links => extract_links(),
         OsmToGraph::Ways => extract_ways(),
-        OsmToGraph::Heuristic { delta } => {
+        OsmToGraph::Heuristics { delta } => {
             let (mut nodes, mut links) = load_graph();
+            metrics(&nodes, &links, "0");
             (nodes, links) = remove_degree_two_nodes(nodes, links);
+            metrics(&nodes, &links, "1");
             (nodes, links) = remove_under_delta_nodes(nodes, links, delta);
+            metrics(&nodes, &links, "2");
             (nodes, links) = remove_under_delta_links(nodes, links, delta);
-            print_graph(nodes, links)
+            metrics(&nodes, &links, "3");
+            print_graph(&nodes, &links)
         }
     }
 }
