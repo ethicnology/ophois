@@ -20,6 +20,8 @@ use rand::thread_rng;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::VecDeque;
+use std::fs;
 use std::io;
 use std::io::prelude::*;
 use structopt::StructOpt;
@@ -44,6 +46,9 @@ enum OsmToGraph {
         delta: f32,
     },
 }
+
+type Links = HashSet<(String, String)>;
+type Nodes = HashMap<String, Node>;
 
 #[derive(Clone, Eq, Hash, PartialEq)]
 struct Node {
@@ -239,10 +244,7 @@ fn midpoint(start: &Node, end: &Node) -> (f32, f32) {
     );
 }
 
-fn remove_degree_two_nodes(
-    mut nodes: HashMap<String, Node>,
-    mut links: HashSet<(String, String)>,
-) -> (HashMap<String, Node>, HashSet<(String, String)>) {
+fn remove_degree_two_nodes(mut nodes: Nodes, mut links: Links) -> (Nodes, Links) {
     let mut two_degree_nodes: Vec<String> = Vec::new();
     for (id, node) in nodes.iter() {
         if node.neighbours.len() == 2 {
@@ -255,11 +257,7 @@ fn remove_degree_two_nodes(
     return (nodes, links);
 }
 
-fn remove_under_delta_nodes(
-    mut nodes: HashMap<String, Node>,
-    mut links: HashSet<(String, String)>,
-    delta: f32,
-) -> (HashMap<String, Node>, HashSet<(String, String)>) {
+fn remove_under_delta_nodes(mut nodes: Nodes, mut links: Links, delta: f32) -> (Nodes, Links) {
     let mut shuffled_nodes: Vec<String> = nodes.keys().cloned().collect();
     let mut rng = thread_rng();
     shuffled_nodes.shuffle(&mut rng);
@@ -283,11 +281,7 @@ fn remove_under_delta_nodes(
     return (nodes, links);
 }
 
-fn replace_node_by_links(
-    mut nodes: HashMap<String, Node>,
-    mut links: HashSet<(String, String)>,
-    node_id: String,
-) -> (HashMap<String, Node>, HashSet<(String, String)>) {
+fn replace_node_by_links(mut nodes: Nodes, mut links: Links, node_id: String) -> (Nodes, Links) {
     let eliminated_neighbours = nodes.get(&node_id).unwrap().neighbours.clone();
     nodes.remove(&node_id);
     for current in eliminated_neighbours.iter() {
@@ -309,11 +303,7 @@ fn replace_node_by_links(
     return (nodes, links);
 }
 
-fn remove_under_delta_links(
-    mut nodes: HashMap<String, Node>,
-    mut links: HashSet<(String, String)>,
-    delta: f32,
-) -> (HashMap<String, Node>, HashSet<(String, String)>) {
+fn remove_under_delta_links(mut nodes: Nodes, mut links: Links, delta: f32) -> (Nodes, Links) {
     let mut is_link_below_delta = true;
     while is_link_below_delta {
         let mut shuffled_links: Vec<(String, String)> = links.clone().into_iter().collect();
@@ -343,10 +333,10 @@ fn remove_under_delta_links(
 }
 
 fn replace_link_by_node(
-    mut nodes: HashMap<String, Node>,
-    mut links: HashSet<(String, String)>,
+    mut nodes: Nodes,
+    mut links: Links,
     link: (String, String),
-) -> (HashMap<String, Node>, HashSet<(String, String)>) {
+) -> (Nodes, Links) {
     let source = nodes.get(&link.0).unwrap().clone();
     let target = nodes.get(&link.1).unwrap().clone();
     nodes.remove(&source.id);
@@ -376,9 +366,56 @@ fn replace_link_by_node(
     return (nodes, links);
 }
 
-fn load_graph() -> (HashMap<String, Node>, HashSet<(String, String)>) {
-    let mut nodes: HashMap<String, Node> = HashMap::new();
-    let mut links: HashSet<(String, String)> = HashSet::new();
+fn bfs_connected_components_distribution_and_largest(
+    nodes: &Nodes,
+    links: &Links,
+) -> (Nodes, Links) {
+    let mut queue: VecDeque<String> = VecDeque::new();
+    let mut visited: HashSet<String> = HashSet::new();
+    let mut distribution: HashMap<u32, u32> = HashMap::new();
+    let mut largest_component_links: Links = HashSet::new();
+    let mut largest_component_nodes: Nodes = HashMap::new();
+    let mut largest_component_size: u32 = 0;
+    for (node_id, _) in nodes.iter() {
+        if !visited.contains(node_id) {
+            let mut component_size: u32 = 0;
+            let mut current_component_links: Links = HashSet::new();
+            let mut current_component_nodes: Nodes = HashMap::new();
+            queue.push_back(node_id.clone());
+            visited.insert(node_id.clone());
+            while !queue.is_empty() {
+                component_size += 1;
+                let current_id = queue.pop_front().unwrap();
+                let current_node = nodes.get(&current_id).unwrap();
+                current_component_nodes.insert(current_id.clone(), current_node.clone());
+                for neighbour_id in &current_node.neighbours {
+                    if links.contains(&deterministic_link(&current_id, neighbour_id))
+                        && !visited.contains(neighbour_id)
+                    {
+                        visited.insert(neighbour_id.clone());
+                        queue.push_back(neighbour_id.clone());
+                        current_component_links
+                            .insert(deterministic_link(&current_id, neighbour_id));
+                    }
+                }
+            }
+            if component_size > largest_component_size {
+                largest_component_size = component_size;
+                largest_component_links = current_component_links;
+                largest_component_nodes = current_component_nodes;
+            }
+            distribution.entry(component_size).or_insert(0);
+            distribution.insert(component_size, distribution[&component_size] + 1);
+        }
+    }
+    distribution_to_file("connected_components_distribution", distribution)
+        .expect("connected components distribution");
+    return (largest_component_nodes, largest_component_links);
+}
+
+fn load_graph() -> (Nodes, Links) {
+    let mut nodes: Nodes = HashMap::new();
+    let mut links: Links = HashSet::new();
     let input = io::stdin();
     for line in input.lock().lines() {
         let line = line.unwrap();
@@ -410,18 +447,15 @@ fn load_graph() -> (HashMap<String, Node>, HashSet<(String, String)>) {
     return (nodes, links);
 }
 
-fn count_nodes(nodes: &HashMap<String, Node>) -> u32 {
+fn count_nodes(nodes: &Nodes) -> u32 {
     return nodes.len() as u32;
 }
 
-fn count_links(links: &HashSet<(String, String)>) -> u32 {
+fn count_links(links: &Links) -> u32 {
     return links.len() as u32;
 }
 
-fn degree_distribution(
-    nodes: &HashMap<String, Node>,
-    links: &HashSet<(String, String)>,
-) -> HashMap<u32, u32> {
+fn degree_distribution(nodes: &Nodes, links: &Links) -> HashMap<u32, u32> {
     let mut distribution: HashMap<u32, u32> = HashMap::new();
     for (node_id, node) in nodes {
         let mut degree = 0;
@@ -430,33 +464,51 @@ fn degree_distribution(
                 degree += 1;
             }
         }
-        *distribution.entry(degree).or_insert(0) += 1;
+        distribution.entry(degree).or_insert(0);
+        distribution.insert(degree, distribution[&degree] + 1);
     }
     return distribution;
 }
 
-fn links_length_distribution(
-    nodes: &HashMap<String, Node>,
-    links: &HashSet<(String, String)>,
-) -> HashMap<u32, u32> {
+fn links_length_distribution(nodes: &Nodes, links: &Links) -> HashMap<u32, u32> {
     let mut distribution: HashMap<u32, u32> = HashMap::new();
     for (node_id, node) in nodes.iter() {
         for neighbour_id in &node.neighbours {
             if links.contains(&deterministic_link(&node_id, &neighbour_id)) {
                 let neighbour = nodes.get(neighbour_id).unwrap();
                 let distance = haversine_distance(node, neighbour) as u32;
-                *distribution.entry(distance).or_insert(0) += 1;
+                distribution.entry(distance).or_insert(0);
+                distribution.insert(distance, distribution[&distance] + 1);
             }
         }
     }
     return distribution;
 }
 
-fn print_graph(nodes: &HashMap<String, Node>, links: &HashSet<(String, String)>) {
+fn substitute_nodes_distribution(nodes: &Nodes) -> HashMap<u32, u32> {
+    let mut distribution: HashMap<u32, u32> = HashMap::new();
+    for (node_id, _) in nodes.iter() {
+        let splitted_id: Vec<&str> = node_id.split('-').collect();
+        let substitute = splitted_id.len() as u32;
+        distribution.entry(substitute).or_insert(0);
+        distribution.insert(substitute, distribution[&substitute] + 1);
+    }
+    return distribution;
+}
+
+fn print_graph(nodes: &Nodes, links: &Links) {
     for (id, node) in nodes {
         println!(
             "{}{}{}{}{}{}{}{}{}",
-            id, SEPARATOR, "lat", SEPARATOR, node.latitude, SEPARATOR, "lon", SEPARATOR, node.longitude,
+            id,
+            SEPARATOR,
+            "lat",
+            SEPARATOR,
+            node.latitude,
+            SEPARATOR,
+            "lon",
+            SEPARATOR,
+            node.longitude,
         )
     }
     for link in links {
@@ -466,16 +518,39 @@ fn print_graph(nodes: &HashMap<String, Node>, links: &HashSet<(String, String)>)
     }
 }
 
-fn metrics(nodes: &HashMap<String, Node>, links: &HashSet<(String, String)>, step: &str) {
-    let n = count_nodes(&nodes);
-    let m = count_links(&links);
-    let degree_distribution = degree_distribution(&nodes, &links);
+fn metrics(nodes: &Nodes, links: &Links, param: (&str, String)) {
+    let _n = count_nodes(&nodes);
+    let _m = count_links(&links);
+    let degree = degree_distribution(&nodes, &links);
     let links_length = links_length_distribution(&nodes, &links);
-    eprint!("\nstep:{};", step);
-    eprint!("{};", n);
-    eprint!("{};", m);
-    eprint!("{:?};", degree_distribution);
-    eprint!("{:?}", links_length);
+    let substitutes = substitute_nodes_distribution(&nodes);
+    distribution_to_file(
+        &format!("degree_step:{}_delta:{}", param.0, param.1),
+        degree,
+    )
+    .expect("degree distribution");
+    distribution_to_file(
+        &format!("links_length_step:{}_delta:{}", param.0, param.1),
+        links_length,
+    )
+    .expect("links length distribution");
+    distribution_to_file(
+        &format!("substitutes_step:{}_delta:{}", param.0, param.1),
+        substitutes,
+    )
+    .expect("substitutes nodes distribution");
+}
+
+fn distribution_to_file(file_name: &str, distribution: HashMap<u32, u32>) -> std::io::Result<()> {
+    let mut string: String = "".to_owned();
+    for (key, value) in distribution {
+        string.push_str(&format!("{} {}\n", key, value))
+    }
+    let directory = "./distributions";
+    fs::create_dir_all(directory)?;
+    let mut file = fs::File::create(format!("./distributions/{}", file_name))?;
+    file.write_all(string.as_bytes())?;
+    Ok(())
 }
 
 fn main() {
@@ -486,14 +561,15 @@ fn main() {
         OsmToGraph::Ways => extract_ways(),
         OsmToGraph::Heuristics { delta } => {
             let (mut nodes, mut links) = load_graph();
-            metrics(&nodes, &links, "0");
+            metrics(&nodes, &links, ("0", delta.to_string()));
             (nodes, links) = remove_degree_two_nodes(nodes, links);
-            metrics(&nodes, &links, "1");
+            metrics(&nodes, &links, ("1", delta.to_string()));
             (nodes, links) = remove_under_delta_nodes(nodes, links, delta);
-            metrics(&nodes, &links, "2");
+            metrics(&nodes, &links, ("2", delta.to_string()));
             (nodes, links) = remove_under_delta_links(nodes, links, delta);
-            metrics(&nodes, &links, "3");
-            print_graph(&nodes, &links)
+            metrics(&nodes, &links, ("3", delta.to_string()));
+            (nodes, links) = bfs_connected_components_distribution_and_largest(&nodes, &links);
+            print_graph(&nodes, &links);
         }
     }
 }
