@@ -4,13 +4,6 @@ pub struct Point {
     pub y: f32,
 }
 
-pub fn projection(longitude: &f32, latitude: &f32) -> Point {
-    return Point {
-        x: longitude.clone(),
-        y: latitude.clone(),
-    };
-}
-
 pub fn haversine_distance(a: &Point, b: &Point) -> f32 {
     let r: f32 = 6356752.0; // earth radius in meters
     let d_lat: f32 = (b.y - a.y).to_radians();
@@ -25,8 +18,8 @@ pub fn haversine_distance(a: &Point, b: &Point) -> f32 {
 
 pub fn midpoint(a: &Point, b: &Point) -> Point {
     return Point {
-        x: (a.y + b.y) / 2.0,
-        y: (a.x + b.x) / 2.0,
+        x: (a.x + b.x) / 2.0,
+        y: (a.y + b.y) / 2.0,
     };
 }
 

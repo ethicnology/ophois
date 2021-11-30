@@ -64,10 +64,10 @@ pub struct Node {
 
 impl Node {
     fn point(&self) -> Point {
-        return projection(
-            &self.longitude.parse().unwrap(),
-            &self.latitude.parse().unwrap(),
-        );
+        return Point {
+            x:self.longitude.parse().unwrap(),
+            y:self.latitude.parse().unwrap()  
+        };
     }
 }
 
