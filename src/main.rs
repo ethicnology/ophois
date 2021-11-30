@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #![feature(destructuring_assignment)]
+
+mod geo;
+
+use geo::*;
 use quick_xml::de::from_str;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
@@ -51,12 +55,20 @@ type Links = HashSet<(String, String)>;
 type Nodes = HashMap<String, Node>;
 
 #[derive(Clone, Eq, Hash, PartialEq)]
-struct Node {
+pub struct Node {
     id: String,
-    latitude: String,
     longitude: String,
+    latitude: String,
     neighbours: Vec<String>,
-    data: String,
+}
+
+impl Node {
+    fn point(&self) -> Point {
+        return projection(
+            &self.longitude.parse().unwrap(),
+            &self.latitude.parse().unwrap(),
+        );
+    }
 }
 
 #[derive(Deserialize)]
@@ -217,33 +229,6 @@ fn deterministic_link(source: &str, target: &str) -> (String, String) {
     return link;
 }
 
-fn haversine_distance(start: &Node, end: &Node) -> f32 {
-    let latitude1: f32 = start.latitude.parse().unwrap();
-    let latitude2: f32 = end.latitude.parse().unwrap();
-    let longitude1: f32 = start.longitude.parse().unwrap();
-    let longitude2: f32 = end.longitude.parse().unwrap();
-    let r: f32 = 6356752.0; // earth radius in meters
-    let d_lat: f32 = (latitude2 - latitude1).to_radians();
-    let d_lon: f32 = (longitude2 - longitude1).to_radians();
-    let lat1: f32 = latitude1.to_radians();
-    let lat2: f32 = latitude2.to_radians();
-    let a: f32 = ((d_lat / 2.0).sin()) * ((d_lat / 2.0).sin())
-        + ((d_lon / 2.0).sin()) * ((d_lon / 2.0).sin()) * (lat1.cos()) * (lat2.cos());
-    let c: f32 = 2.0 * ((a.sqrt()).atan2((1.0 - a).sqrt()));
-    return r * c;
-}
-
-fn midpoint(start: &Node, end: &Node) -> (f32, f32) {
-    let latitude1: f32 = start.latitude.parse().unwrap();
-    let latitude2: f32 = end.latitude.parse().unwrap();
-    let longitude1: f32 = start.longitude.parse().unwrap();
-    let longitude2: f32 = end.longitude.parse().unwrap();
-    return (
-        (latitude1 + latitude2) / 2.0,
-        (longitude1 + longitude2) / 2.0,
-    );
-}
-
 fn remove_degree_two_nodes(mut nodes: Nodes, mut links: Links) -> (Nodes, Links) {
     let mut two_degree_nodes: Vec<String> = Vec::new();
     for (id, node) in nodes.iter() {
@@ -267,7 +252,7 @@ fn remove_under_delta_nodes(mut nodes: Nodes, mut links: Links, delta: f32) -> (
         for neighbour_id in &node.neighbours {
             if links.contains(&deterministic_link(&node_id, &neighbour_id)) {
                 let neighbour = nodes.get(neighbour_id).unwrap();
-                let distance = haversine_distance(&node, &neighbour);
+                let distance = haversine_distance(&node.point(), &neighbour.point());
                 if distance > delta {
                     remove = false;
                     break;
@@ -313,7 +298,7 @@ fn remove_under_delta_links(mut nodes: Nodes, mut links: Links, delta: f32) -> (
             if links.contains(link) {
                 let source = nodes.get(&link.0).unwrap();
                 let target = nodes.get(&link.1).unwrap();
-                let distance = haversine_distance(source, target);
+                let distance = haversine_distance(&source.point(), &target.point());
                 if distance < delta {
                     (nodes, links) = replace_link_by_node(nodes, links, link.clone());
                 }
@@ -323,7 +308,7 @@ fn remove_under_delta_links(mut nodes: Nodes, mut links: Links, delta: f32) -> (
         for link in links.iter() {
             let source = nodes.get(&link.0).unwrap();
             let target = nodes.get(&link.1).unwrap();
-            let distance = haversine_distance(source, target);
+            let distance = haversine_distance(&source.point(), &target.point());
             if distance < delta {
                 is_link_below_delta = true;
             }
@@ -355,13 +340,12 @@ fn replace_link_by_node(
             neighbour.neighbours.push(new_node_id.clone());
         }
     }
-    let midpoint = midpoint(&source, &target);
+    let midpoint = midpoint(&source.point(), &target.point());
     nodes.entry(new_node_id.clone()).or_insert(Node {
         id: new_node_id.clone(),
-        latitude: midpoint.0.to_string(),
-        longitude: midpoint.1.to_string(),
+        longitude: midpoint.x.to_string(),
+        latitude: midpoint.y.to_string(),
         neighbours: new_neighbours.clone(),
-        data: "null".to_string(),
     });
     return (nodes, links);
 }
@@ -436,9 +420,8 @@ fn load_graph() -> (Nodes, Links) {
             _ => {
                 nodes.entry(data[0].to_owned()).or_insert(Node {
                     id: data[0].to_owned(),
-                    latitude: data[2].to_owned(),
                     longitude: data[4].to_owned(),
-                    data: "null".to_string(),
+                    latitude: data[2].to_owned(),
                     neighbours: Vec::new(),
                 });
             }
@@ -476,7 +459,7 @@ fn links_length_distribution(nodes: &Nodes, links: &Links) -> HashMap<u32, u32> 
         for neighbour_id in &node.neighbours {
             if links.contains(&deterministic_link(&node_id, &neighbour_id)) {
                 let neighbour = nodes.get(neighbour_id).unwrap();
-                let distance = haversine_distance(node, neighbour) as u32;
+                let distance = haversine_distance(&node.point(), &neighbour.point()) as u32;
                 distribution.entry(distance).or_insert(0);
                 distribution.insert(distance, distribution[&distance] + 1);
             }
