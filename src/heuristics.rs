@@ -176,8 +176,7 @@ pub fn bfs_connected_components_distribution_and_largest(
             distribution.insert(component_size, distribution[&component_size] + 1);
         }
     }
-    distribution_to_file("connected_components_distribution", distribution)
-        .expect("connected components distribution");
+    distribution_to_file("connected_components_distribution", distribution);
     return (largest_component_nodes, largest_component_links);
 }
 
