@@ -54,7 +54,7 @@ enum OsmToGraph {
 type Links = HashSet<(String, String)>;
 type Nodes = HashMap<String, Node>;
 
-#[derive(Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq, Debug)]
 pub struct Node {
     id: String,
     longitude: String,
@@ -65,8 +65,8 @@ pub struct Node {
 impl Node {
     fn point(&self) -> Point {
         return Point {
-            x:self.longitude.parse().unwrap(),
-            y:self.latitude.parse().unwrap()  
+            x: self.longitude.parse().unwrap(),
+            y: self.latitude.parse().unwrap(),
         };
     }
 }
@@ -330,7 +330,7 @@ fn replace_link_by_node(
     let mut new_neighbours = [&source.neighbours[..], &target.neighbours[..]].concat();
     new_neighbours.sort_unstable();
     new_neighbours.dedup();
-    let new_node_id = format!("{}-{}", source.id, target.id);
+    let new_node_id = format!("{}-{}", source.id, target.id); // non deterministic id -> duplicate risks
     for neighbour_id in new_neighbours.iter() {
         if nodes.contains_key(neighbour_id) {
             links.insert(deterministic_link(&new_node_id, &neighbour_id));
@@ -536,6 +536,52 @@ fn distribution_to_file(file_name: &str, distribution: HashMap<u32, u32>) -> std
     Ok(())
 }
 
+fn discretize(mut nodes: Nodes, mut links: Links, delta: f32) -> (Nodes, Links) {
+    let links_clone = links.clone();
+    for link in links_clone {
+        let source = nodes.get(&link.0).unwrap().clone();
+        let target = nodes.get(&link.1).unwrap().clone();
+        let distance = haversine_distance(&source.point(), &target.point());
+        if distance >= 2.0 * delta {
+            links.remove(&deterministic_link(&source.id.clone(), &target.id.clone()));
+            let a = (distance / delta) as u32;
+            let mut new_nodes = Vec::new();
+            for i in 1..a {
+                let b = get_point_from_line(&source.point(), &target.point(), i as f32 / a as f32);
+                let node = Node {
+                    id: format!("{}-{}-{}/{}", source.id, target.id, i, a), // non deterministic id -> duplicate risks
+                    longitude: b.x.to_string(),
+                    latitude: b.y.to_string(),
+                    neighbours: Vec::new(),
+                };
+                new_nodes.push(node.id.clone());
+                nodes.entry(node.id.clone()).or_insert(node);
+            }
+            for j in 1..a {
+                let new_node_id = &new_nodes[(j - 1) as usize];
+                let mut previous = format!("{}-{}-{}/{}", source.id, target.id, j - 1, a);
+                let mut next = format!("{}-{}-{}/{}", source.id, target.id, j + 1, a);
+                if j == 1 {
+                    previous = source.id.clone();
+                }
+                if j == a - 1 {
+                    next = target.id.clone();
+                }
+                let node = nodes.get_mut(new_node_id).unwrap();
+                node.neighbours.push(previous.clone());
+                node.neighbours.push(next.clone());
+                let previous_node = nodes.get_mut(&previous).unwrap();
+                previous_node.neighbours.push(new_node_id.clone());
+                let next_node = nodes.get_mut(&next).unwrap();
+                next_node.neighbours.push(new_node_id.clone());
+                links.insert((previous, new_node_id.to_owned()));
+                links.insert((new_node_id.to_owned(), next));
+            }
+        }
+    }
+    return (nodes, links);
+}
+
 fn main() {
     match OsmToGraph::from_args() {
         OsmToGraph::Format => format_xml(),
@@ -552,6 +598,9 @@ fn main() {
             (nodes, links) = remove_under_delta_links(nodes, links, delta);
             metrics(&nodes, &links, ("3", delta.to_string()));
             (nodes, links) = bfs_connected_components_distribution_and_largest(&nodes, &links);
+            metrics(&nodes, &links, ("4", delta.to_string()));
+            (nodes, links) = discretize(nodes, links, delta);
+            metrics(&nodes, &links, ("5", delta.to_string()));
             print_graph(&nodes, &links);
         }
     }

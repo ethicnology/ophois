@@ -25,14 +25,34 @@ pub fn midpoint(a: &Point, b: &Point) -> Point {
 
 pub fn get_point_from_line(a: &Point, b: &Point, part: f32) -> Point {
     return Point {
-        x: a.x + (part) * (b.x - a.x),
-        y: a.y + (part) * (b.y - a.y),
+        x: a.x + (part * (b.x - a.x)),
+        y: a.y + (part * (b.y - a.y)),
     };
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn test_x() {
+        let a = Point {
+            x: 2.3484976,
+            y: 48.8275185,
+        };
+        let b = Point {
+            x: 2.3486683,
+            y: 48.8275416,
+        };
+        assert_eq!(
+            midpoint(&a, &b),
+            Point {
+                x: 2.348583,
+                y: 48.82753
+            }
+        );
+        assert_eq!(midpoint(&a, &b), get_point_from_line(&a, &b, 1.0 / 2.0));
+    }
+
     #[test]
     fn test_y() {
         let a = Point { x: -4.0, y: 1.0 };
