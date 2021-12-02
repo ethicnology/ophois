@@ -16,19 +16,19 @@
 #![feature(destructuring_assignment)]
 
 mod geo;
+mod metrics;
 mod openstreetmap;
 mod utils;
 
+use crate::Node;
 use geo::*;
+use metrics::*;
 use openstreetmap::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
-use std::fs;
-use std::io;
-use std::io::prelude::*;
 use structopt::StructOpt;
 use utils::*;
 
@@ -53,32 +53,6 @@ enum OsmToGraph {
 
 type Links = HashSet<(String, String)>;
 type Nodes = HashMap<String, Node>;
-
-#[derive(Clone, Eq, Hash, PartialEq, Debug)]
-pub struct Node {
-    id: String,
-    longitude: String,
-    latitude: String,
-    neighbours: Vec<String>,
-}
-
-impl Node {
-    fn point(&self) -> Point {
-        return Point {
-            x: self.longitude.parse().unwrap(),
-            y: self.latitude.parse().unwrap(),
-        };
-    }
-}
-
-fn deterministic_link(source: &str, target: &str) -> (String, String) {
-    let link = if source < target {
-        (source.to_owned(), target.to_owned())
-    } else {
-        (target.to_owned(), source.to_owned())
-    };
-    return link;
-}
 
 fn remove_degree_two_nodes(mut nodes: Nodes, mut links: Links) -> (Nodes, Links) {
     let mut two_degree_nodes: Vec<String> = Vec::new();
@@ -246,145 +220,6 @@ fn bfs_connected_components_distribution_and_largest(
     distribution_to_file("connected_components_distribution", distribution)
         .expect("connected components distribution");
     return (largest_component_nodes, largest_component_links);
-}
-
-fn load_graph() -> (Nodes, Links) {
-    let mut nodes: Nodes = HashMap::new();
-    let mut links: Links = HashSet::new();
-    let input = io::stdin();
-    for line in input.lock().lines() {
-        let line = line.unwrap();
-        let data: Vec<&str> = line.split(separator()).collect();
-        match data.len() {
-            3 => {
-                let source = data[0].to_owned();
-                let target = data[1].to_owned();
-                assert_ne!(&source, &target);
-                nodes
-                    .entry(source.to_owned())
-                    .and_modify(|e| e.neighbours.push(target.clone()));
-                nodes
-                    .entry(target.to_owned())
-                    .and_modify(|e| e.neighbours.push(source.clone()));
-                links.insert(deterministic_link(&source, &target));
-            }
-            _ => {
-                nodes.entry(data[0].to_owned()).or_insert(Node {
-                    id: data[0].to_owned(),
-                    longitude: data[4].to_owned(),
-                    latitude: data[2].to_owned(),
-                    neighbours: Vec::new(),
-                });
-            }
-        }
-    }
-    return (nodes, links);
-}
-
-fn count_nodes(nodes: &Nodes) -> u32 {
-    return nodes.len() as u32;
-}
-
-fn count_links(links: &Links) -> u32 {
-    return links.len() as u32;
-}
-
-fn degree_distribution(nodes: &Nodes, links: &Links) -> HashMap<u32, u32> {
-    let mut distribution: HashMap<u32, u32> = HashMap::new();
-    for (node_id, node) in nodes {
-        let mut degree = 0;
-        for neighbour_id in &node.neighbours {
-            if links.contains(&deterministic_link(&node_id, &neighbour_id)) {
-                degree += 1;
-            }
-        }
-        distribution.entry(degree).or_insert(0);
-        distribution.insert(degree, distribution[&degree] + 1);
-    }
-    return distribution;
-}
-
-fn links_length_distribution(nodes: &Nodes, links: &Links) -> HashMap<u32, u32> {
-    let mut distribution: HashMap<u32, u32> = HashMap::new();
-    for (node_id, node) in nodes.iter() {
-        for neighbour_id in &node.neighbours {
-            if links.contains(&deterministic_link(&node_id, &neighbour_id)) {
-                let neighbour = nodes.get(neighbour_id).unwrap();
-                let distance = haversine_distance(&node.point(), &neighbour.point()) as u32;
-                distribution.entry(distance).or_insert(0);
-                distribution.insert(distance, distribution[&distance] + 1);
-            }
-        }
-    }
-    return distribution;
-}
-
-fn substitute_nodes_distribution(nodes: &Nodes) -> HashMap<u32, u32> {
-    let mut distribution: HashMap<u32, u32> = HashMap::new();
-    for (node_id, _) in nodes.iter() {
-        let splitted_id: Vec<&str> = node_id.split('-').collect();
-        let substitute = splitted_id.len() as u32;
-        distribution.entry(substitute).or_insert(0);
-        distribution.insert(substitute, distribution[&substitute] + 1);
-    }
-    return distribution;
-}
-
-fn print_graph(nodes: &Nodes, links: &Links) {
-    for (id, node) in nodes {
-        println!(
-            "{}{}{}{}{}{}{}{}{}",
-            id,
-            separator(),
-            "lat",
-            separator(),
-            node.latitude,
-            separator(),
-            "lon",
-            separator(),
-            node.longitude,
-        )
-    }
-    for link in links {
-        let source = &link.0;
-        let target = &link.1;
-        println!("{}{}{}", source, separator(), target);
-    }
-}
-
-fn metrics(nodes: &Nodes, links: &Links, param: (&str, String)) {
-    let _n = count_nodes(&nodes);
-    let _m = count_links(&links);
-    let degree = degree_distribution(&nodes, &links);
-    let links_length = links_length_distribution(&nodes, &links);
-    let substitutes = substitute_nodes_distribution(&nodes);
-    distribution_to_file(
-        &format!("degree_step:{}_delta:{}", param.0, param.1),
-        degree,
-    )
-    .expect("degree distribution");
-    distribution_to_file(
-        &format!("links_length_step:{}_delta:{}", param.0, param.1),
-        links_length,
-    )
-    .expect("links length distribution");
-    distribution_to_file(
-        &format!("substitutes_step:{}_delta:{}", param.0, param.1),
-        substitutes,
-    )
-    .expect("substitutes nodes distribution");
-}
-
-fn distribution_to_file(file_name: &str, distribution: HashMap<u32, u32>) -> std::io::Result<()> {
-    let mut string: String = "".to_owned();
-    for (key, value) in distribution {
-        string.push_str(&format!("{} {}\n", key, value))
-    }
-    let directory = "./distributions";
-    fs::create_dir_all(directory)?;
-    let mut file = fs::File::create(format!("./distributions/{}", file_name))?;
-    file.write_all(string.as_bytes())?;
-    Ok(())
 }
 
 fn discretize(mut nodes: Nodes, mut links: Links, delta: f32) -> (Nodes, Links) {
