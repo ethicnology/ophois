@@ -1,8 +1,8 @@
 [package]
 name = "osmtograph"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Jules Azad EMERY a.k.a. ethicnology <ethicnology@pm.me>"]
-edition = "2018"
+edition = "2021"
 description = "osmtograph extract streets graph object from OpenStreetMap data"
 readme = "README.md"
 repository = "https://github.com/ethicnology/osmtograph"
