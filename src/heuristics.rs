@@ -15,9 +15,9 @@ type Nodes = HashMap<String, Node>;
 
 pub fn remove_degree_two_nodes(mut nodes: Nodes, mut links: Links) -> (Nodes, Links) {
     let mut two_degree_nodes: Vec<String> = Vec::new();
-    for (id, node) in nodes.iter() {
+    for (node_id, node) in nodes.iter() {
         if node.neighbours.len() == 2 {
-            two_degree_nodes.push(id.clone());
+            two_degree_nodes.push(node_id.clone());
         }
     }
     for to_delete in two_degree_nodes {
@@ -114,7 +114,8 @@ fn replace_link_by_node(
     let mut new_neighbours = [&source.neighbours[..], &target.neighbours[..]].concat();
     new_neighbours.sort_unstable();
     new_neighbours.dedup();
-    let new_node_id = format!("{}-{}", source.id, target.id); // non deterministic id -> duplicate risks
+    let id = deterministic_link(&source.id, &target.id);
+    let new_node_id = format!("{}-{}", id.0, id.1); // non deterministic id -> duplicate risks
     for neighbour_id in new_neighbours.iter() {
         if nodes.contains_key(neighbour_id) {
             links.insert(deterministic_link(&new_node_id, &neighbour_id));
@@ -147,7 +148,6 @@ pub fn bfs_connected_components_distribution_and_largest(
     for (node_id, _) in nodes.iter() {
         if !visited.contains(node_id) {
             let mut component_size: u32 = 0;
-            let mut current_component_links: Links = HashSet::new();
             let mut current_component_nodes: Nodes = HashMap::new();
             queue.push_back(node_id.clone());
             visited.insert(node_id.clone());
@@ -162,18 +162,22 @@ pub fn bfs_connected_components_distribution_and_largest(
                     {
                         visited.insert(neighbour_id.clone());
                         queue.push_back(neighbour_id.clone());
-                        current_component_links
-                            .insert(deterministic_link(&current_id, neighbour_id));
                     }
                 }
             }
             if component_size > largest_component_size {
                 largest_component_size = component_size;
-                largest_component_links = current_component_links;
                 largest_component_nodes = current_component_nodes;
             }
             distribution.entry(component_size).or_insert(0);
             distribution.insert(component_size, distribution[&component_size] + 1);
+        }
+    }
+    for (node_id, node) in largest_component_nodes.iter() {
+        for neighbour_id in &node.neighbours {
+            if links.contains(&deterministic_link(node_id, neighbour_id)) {
+                largest_component_links.insert(deterministic_link(node_id, neighbour_id));
+            }
         }
     }
     distribution_to_file("connected_components_distribution", distribution);
@@ -188,27 +192,29 @@ pub fn discretize(mut nodes: Nodes, mut links: Links, delta: f32) -> (Nodes, Lin
         let distance = haversine_distance(&source.point(), &target.point());
         if distance >= 2.0 * delta {
             links.remove(&deterministic_link(&source.id.clone(), &target.id.clone()));
-            let a = (distance / delta) as u32;
+            let part = (distance / delta) as u32;
             let mut new_nodes = Vec::new();
-            for i in 1..a {
-                let b = get_point_from_line(&source.point(), &target.point(), i as f32 / a as f32);
+            for i in 1..part {
+                let point =
+                    get_point_from_line(&source.point(), &target.point(), i as f32 / part as f32);
+                let id = deterministic_link(&source.id, &target.id);
                 let node = Node {
-                    id: format!("{}-{}-{}/{}", source.id, target.id, i, a), // non deterministic id -> duplicate risks
-                    longitude: b.x.to_string(),
-                    latitude: b.y.to_string(),
+                    id: format!("{}-{}:{}/{}", id.0, id.1, i, part),
+                    longitude: point.x.to_string(),
+                    latitude: point.y.to_string(),
                     neighbours: Vec::new(),
                 };
                 new_nodes.push(node.id.clone());
                 nodes.entry(node.id.clone()).or_insert(node);
             }
-            for j in 1..a {
+            for j in 1..part {
                 let new_node_id = &new_nodes[(j - 1) as usize];
-                let mut previous = format!("{}-{}-{}/{}", source.id, target.id, j - 1, a);
-                let mut next = format!("{}-{}-{}/{}", source.id, target.id, j + 1, a);
+                let mut previous = format!("{}-{}:{}/{}", source.id, target.id, j - 1, part);
+                let mut next = format!("{}-{}:{}/{}", source.id, target.id, j + 1, part);
                 if j == 1 {
                     previous = source.id.clone();
                 }
-                if j == a - 1 {
+                if j == part - 1 {
                     next = target.id.clone();
                 }
                 let node = nodes.get_mut(new_node_id).unwrap();

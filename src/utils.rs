@@ -70,10 +70,10 @@ pub fn load_graph() -> (Nodes, Links) {
 }
 
 pub fn print_graph(nodes: &Nodes, links: &Links) {
-    for (id, node) in nodes {
+    for (node_id, node) in nodes.iter() {
         println!(
             "{}{}{}{}{}{}{}{}{}",
-            id,
+            node_id,
             separator(),
             "lat",
             separator(),

@@ -67,9 +67,9 @@ pub fn distribution_to_file(file_name: &str, distribution: HashMap<u32, u32>) {
 }
 
 fn values_to_file(file_name: &str, values: &[u8]) -> std::io::Result<()> {
-    let directory = "./distributions";
+    let directory = "./metrics";
     fs::create_dir_all(directory)?;
-    let mut file = fs::File::create(format!("./distributions/{}", file_name))?;
+    let mut file = fs::File::create(format!("./metrics/{}", file_name))?;
     file.write_all(values)?;
     Ok(())
 }
@@ -78,7 +78,7 @@ pub fn metrics(nodes: &Nodes, links: &Links, param: (&str, String)) {
     let n = count_nodes(&nodes);
     let m = count_links(&links);
     values_to_file(
-        &format!("nodes_links:{}_delta:{}", param.0, param.1),
+        &format!("nodes_links_step:{}_delta:{}", param.0, param.1),
         format!("{} {}", n, m).as_bytes(),
     )
     .expect("graph size file");
@@ -86,15 +86,21 @@ pub fn metrics(nodes: &Nodes, links: &Links, param: (&str, String)) {
     let links_length = links_length_distribution(&nodes, &links);
     let substitutes = substitute_nodes_distribution(&nodes);
     distribution_to_file(
-        &format!("degree_step_distribution:{}_delta:{}", param.0, param.1),
+        &format!("degree_distribution_step:{}_delta:{}", param.0, param.1),
         degree,
     );
     distribution_to_file(
-        &format!("links_length_step_distribution:{}_delta:{}", param.0, param.1),
+        &format!(
+            "links_length_distribution_step:{}_delta:{}",
+            param.0, param.1
+        ),
         links_length,
     );
     distribution_to_file(
-        &format!("substitutes_step_distribution:{}_delta:{}", param.0, param.1),
+        &format!(
+            "substitutes_distribution_step:{}_delta:{}",
+            param.0, param.1
+        ),
         substitutes,
     );
 }
