@@ -56,14 +56,15 @@ pub fn load_graph() -> (Nodes, Links) {
                     .and_modify(|e| e.neighbours.push(source.clone()));
                 links.insert(deterministic_link(&source, &target));
             }
-            _ => {
+            3 => {
                 nodes.entry(data[0].to_owned()).or_insert(Node {
                     id: data[0].to_owned(),
-                    longitude: data[4].to_owned(),
-                    latitude: data[2].to_owned(),
+                    longitude: data[2].to_owned(),
+                    latitude: data[1].to_owned(),
                     neighbours: Vec::new(),
                 });
             }
+            _ => panic!("Wrong input length!\n expect 2 or 3 and got {}\nnodes: id latitude longitude\nlinks: node_id node_id\n", data.len())
         }
     }
     return (nodes, links);
@@ -72,14 +73,10 @@ pub fn load_graph() -> (Nodes, Links) {
 pub fn print_graph(nodes: &Nodes, links: &Links) {
     for (node_id, node) in nodes.iter() {
         println!(
-            "{}{}{}{}{}{}{}{}{}",
+            "{}{}{}{}{}",
             node_id,
             separator(),
-            "lat",
-            separator(),
             node.latitude,
-            separator(),
-            "lon",
             separator(),
             node.longitude,
         )

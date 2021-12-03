@@ -9,8 +9,6 @@ struct Node {
     id: String,
     lat: String,
     lon: String,
-    #[serde(rename = "tag")]
-    tags: Option<Vec<Tag>>,
 }
 
 #[derive(Deserialize)]
@@ -22,12 +20,6 @@ struct Ways {
 #[derive(Deserialize)]
 struct NodeRef {
     r#ref: String,
-}
-
-#[derive(Deserialize)]
-struct Tag {
-    k: String,
-    v: String,
 }
 
 pub fn format_xml() {
@@ -67,37 +59,13 @@ pub fn format_xml() {
 
 pub fn extract_nodes() {
     let input = io::stdin();
-    let latitude = "lat";
-    let longitude = "lon";
     for line in input.lock().lines() {
         let row = line.unwrap();
         if row.starts_with("<node") {
             let node: Node = from_str(&row).unwrap();
             let mut data: String = "".to_owned();
-            let coordinates = format!(
-                "{}{}{}{}{}{}{}{}",
-                separator(),
-                latitude,
-                separator(),
-                node.lat,
-                separator(),
-                longitude,
-                separator(),
-                node.lon
-            );
+            let coordinates = format!("{}{}{}{}", separator(), node.lat, separator(), node.lon);
             data.push_str(&coordinates);
-            match node.tags {
-                Some(tags) => {
-                    if tags.len() > 0 {
-                        for tag in tags {
-                            let s = format!("{}{}{}{}", separator(), tag.k, separator(), tag.v);
-                            data.push_str(&s);
-                        }
-                        data = data.replace('\n', " ").replace('\r', " ");
-                    }
-                }
-                None => (),
-            }
             println!("{}{}", node.id, data);
         }
     }
