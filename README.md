@@ -1,6 +1,6 @@
 # osmtograph
 
-![](https://github.com/ethicnology/osmtograph/blob/main/assets/osmtograph-polylines.png?raw=true)
+![](https://github.com/ethicnology/osmtograph/blob/main/assets/example_animated.gif)
 
 ## prerequisites
 
