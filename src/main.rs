@@ -34,9 +34,9 @@ use utils::*;
 enum OsmToGraph {
     /// Format OSM filtered by way file to put one xml element by line
     Format,
-    /// Extract all nodes data : node_id␟key␟value␟key␟value…
+    /// Extract all nodes data : node_id␟latitude␟longitude
     Nodes,
-    /// Extract links from ways nodes : node_id␟node_id␟way_id
+    /// Extract links from ways nodes : node_id␟node_id
     Links,
     /// Apply heuristics
     Heuristics {
