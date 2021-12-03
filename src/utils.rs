@@ -44,7 +44,7 @@ pub fn load_graph() -> (Nodes, Links) {
         let line = line.unwrap();
         let data: Vec<&str> = line.split(separator()).collect();
         match data.len() {
-            3 => {
+            2 => {
                 let source = data[0].to_owned();
                 let target = data[1].to_owned();
                 assert_ne!(&source, &target);

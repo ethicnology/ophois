@@ -38,10 +38,14 @@ enum OsmToGraph {
     Nodes,
     /// Extract links from ways nodes : node_id␟node_id␟way_id
     Links,
-    /// Extract ways data : way_id␟key␟value␟key␟value…
-    Ways,
-    /// Apply heuristics.
+    /// Apply heuristics
     Heuristics {
+        /// Delta is expressed in meters.
+        #[structopt(short, long)]
+        delta: f32,
+    },
+    /// Discretize links in equal parts
+    Discretize {
         /// Delta is expressed in meters.
         #[structopt(short, long)]
         delta: f32,
@@ -53,7 +57,6 @@ fn main() {
         OsmToGraph::Format => format_xml(),
         OsmToGraph::Nodes => extract_nodes(),
         OsmToGraph::Links => extract_links(),
-        OsmToGraph::Ways => extract_ways(),
         OsmToGraph::Heuristics { delta } => {
             let (mut nodes, mut links) = load_graph();
             metrics(&nodes, &links, ("0", delta.to_string()));
@@ -65,8 +68,11 @@ fn main() {
             metrics(&nodes, &links, ("3", delta.to_string()));
             (nodes, links) = bfs_connected_components_distribution_and_largest(&nodes, &links);
             metrics(&nodes, &links, ("4", delta.to_string()));
+            print_graph(&nodes, &links);
+        }
+        OsmToGraph::Discretize { delta } => {
+            let (mut nodes, mut links) = load_graph();
             (nodes, links) = discretize(nodes, links, delta);
-            metrics(&nodes, &links, ("5", delta.to_string()));
             print_graph(&nodes, &links);
         }
     }
