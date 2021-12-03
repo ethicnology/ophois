@@ -1,13 +1,12 @@
 [package]
 name = "osmtograph"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Jules Azad EMERY a.k.a. ethicnology <ethicnology@pm.me>"]
-edition = "2018"
+edition = "2021"
 description = "osmtograph extract streets graph object from OpenStreetMap data"
 readme = "README.md"
 repository = "https://github.com/ethicnology/osmtograph"
 license = "GPL-3.0-or-later"
-license-file = "LICENSE"
 keywords = ["OpenStreetMap", "OSM", "graph", "streets", "network", "map"]
 categories = ["command-line-utilities"]
 
@@ -16,3 +15,4 @@ categories = ["command-line-utilities"]
 structopt = "0.3"
 serde = { version = "1.0", features = [ "derive" ] }
 quick-xml = { version = "0.22", features = [ "serialize" ] }
+rand = "0.8.0"
