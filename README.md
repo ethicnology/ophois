@@ -17,7 +17,7 @@ Download the
 your system (**Linux, MacOS or Windows**)
 
 ### build from sources
-This program use rust **destructuring_assignment** feature which is nightly on rust 1.58
+This program use **destructuring_assignment** feature which is stable on rust 1.59
 ```sh
 cargo build --release
 ```
