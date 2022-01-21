@@ -22,15 +22,15 @@ mod openstreetmap;
 mod utils;
 
 use crate::Node;
+use clap::Parser;
 use geo::*;
 use heuristics::*;
 use metrics::*;
 use openstreetmap::*;
-use structopt::StructOpt;
 use utils::*;
 
-#[derive(StructOpt)]
-#[structopt(name = "osmtograph")]
+#[derive(Parser)]
+#[clap(author, version, bin_name = "osmtograph")]
 enum OsmToGraph {
     /// Format OSM filtered by way file to put one xml element by line
     Format,
@@ -53,7 +53,7 @@ enum OsmToGraph {
 }
 
 fn main() {
-    match OsmToGraph::from_args() {
+    match OsmToGraph::parse() {
         OsmToGraph::Format => format_xml(),
         OsmToGraph::Nodes => extract_nodes(),
         OsmToGraph::Links => extract_links(),
