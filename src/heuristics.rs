@@ -26,6 +26,34 @@ pub fn remove_degree_two_nodes(mut nodes: Nodes, mut links: Links) -> (Nodes, Li
     return (nodes, links);
 }
 
+pub fn remove_degree_one_nodes(mut nodes: Nodes, mut links: Links) -> (Nodes, Links) {
+    let mut still = true;
+    while still == true {
+        let mut one_degree_nodes: Vec<String> = Vec::new();
+        for (node_id, node) in nodes.iter() {
+            if node.neighbours.len() == 1 {
+                one_degree_nodes.push(node_id.clone());
+            }
+        }
+        for to_delete in one_degree_nodes {
+            let node = nodes.get(&to_delete).unwrap().clone();
+            nodes.remove(&to_delete);
+            links.remove(&deterministic_link(&to_delete, &node.neighbours[0]));
+        }
+
+        let mut remain = false;
+        for (_, node) in nodes.iter() {
+            if node.neighbours.len() == 1 {
+                remain = true;
+            }
+        }
+        if remain == false {
+            still = false
+        }
+    }
+    return (nodes, links);
+}
+
 pub fn remove_under_delta_nodes(mut nodes: Nodes, mut links: Links, delta: f32) -> (Nodes, Links) {
     let mut shuffled_nodes: Vec<String> = nodes.keys().cloned().collect();
     let mut rng = thread_rng();
