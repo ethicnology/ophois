@@ -13,8 +13,7 @@
 ### download executable
 
 Download the
-[**lastest release**](https://github.com/ethicnology/osmtograph/releases) for
-your system (**Linux, MacOS or Windows**)
+[**lastest release**](https://github.com/ethicnology/osmtograph/releases)
 
 ### build from sources
 This program use **destructuring_assignment** feature which is stable on rust 1.59
@@ -52,12 +51,12 @@ cat nodes links > raw-graph
 
 #### remove two degree nodes, nodes with under delta links, links which length is under delta and return the largest connected components.
 ```sh
-cat raw-graph | ./osmtograph heuristics --delta 5.0 > heuristics-graph
+cat raw-graph | ./osmtograph heuristics --delta 10.0 > heuristics-graph
 ```
 
 #### Discretize heuristics graph in equal parts which are between delta and delta*2
 ```sh
-cat heuristics-graph | ./osmtograph discretize --delta 3.0 > discretized-graph
+cat heuristics-graph | ./osmtograph discretize --delta 5.0 > discretized-graph
 ```
 
 ##### One line heuristics and discretization
