@@ -34,15 +34,12 @@ fn degree_distribution(nodes: &Nodes, links: &Links) -> HashMap<u32, u32> {
 
 fn links_length_distribution(nodes: &Nodes, links: &Links) -> HashMap<u32, u32> {
     let mut distribution: HashMap<u32, u32> = HashMap::new();
-    for (node_id, node) in nodes.iter() {
-        for neighbour_id in &node.neighbours {
-            if links.contains(&deterministic_link(&node_id, &neighbour_id)) {
-                let neighbour = nodes.get(neighbour_id).unwrap();
-                let distance = haversine_distance(&node.point(), &neighbour.point()) as u32;
-                distribution.entry(distance).or_insert(0);
-                distribution.insert(distance, distribution[&distance] + 1);
-            }
-        }
+    for (node_u, node_v) in links {
+        let u = nodes.get(node_u).unwrap();
+        let v = nodes.get(node_v).unwrap();
+        let distance = haversine_distance(&u.point(), &v.point()) as u32;
+        distribution.entry(distance).or_insert(0);
+        distribution.insert(distance, distribution[&distance] + 1);
     }
     return distribution;
 }
