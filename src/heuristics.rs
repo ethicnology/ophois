@@ -27,8 +27,7 @@ pub fn remove_degree_two_nodes(mut nodes: Nodes, mut links: Links) -> (Nodes, Li
 }
 
 pub fn remove_degree_one_nodes(mut nodes: Nodes, mut links: Links) -> (Nodes, Links) {
-    let mut still = true;
-    while still == true {
+    loop {
         let mut one_degree_nodes: Vec<String> = Vec::new();
         for (node_id, node) in nodes.iter() {
             if node.neighbours.len() == 1 {
@@ -37,18 +36,20 @@ pub fn remove_degree_one_nodes(mut nodes: Nodes, mut links: Links) -> (Nodes, Li
         }
         for to_delete in one_degree_nodes {
             let node = nodes.get(&to_delete).unwrap().clone();
-            nodes.remove(&to_delete);
+            let neigh = nodes.get_mut(&node.neighbours[0]).unwrap();
+            neigh.neighbours.retain(|x| *x != to_delete);
             links.remove(&deterministic_link(&to_delete, &node.neighbours[0]));
+            nodes.remove(&to_delete);
         }
 
-        let mut remain = false;
+        let mut still = false;
         for (_, node) in nodes.iter() {
             if node.neighbours.len() == 1 {
-                remain = true;
+                still = true;
             }
         }
-        if remain == false {
-            still = false
+        if still == false {
+            break;
         }
     }
     return (nodes, links);

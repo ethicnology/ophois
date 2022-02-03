@@ -58,6 +58,7 @@ fn main() {
         OsmToGraph::Links => extract_links(),
         OsmToGraph::Heuristics { delta } => {
             let (mut nodes, mut links) = load_graph();
+            (nodes, links) = bfs_connected_components_distribution_and_largest(&nodes, &links);
             metrics(&nodes, &links, ("0", delta.to_string()));
             (nodes, links) = remove_degree_one_nodes(nodes, links);
             metrics(&nodes, &links, ("1", delta.to_string()));
@@ -67,13 +68,12 @@ fn main() {
             metrics(&nodes, &links, ("3", delta.to_string()));
             (nodes, links) = remove_under_delta_links(nodes, links, delta);
             metrics(&nodes, &links, ("4", delta.to_string()));
-            (nodes, links) = bfs_connected_components_distribution_and_largest(&nodes, &links);
-            metrics(&nodes, &links, ("5", delta.to_string()));
             print_graph(&nodes, &links);
         }
         OsmToGraph::Discretize { delta } => {
             let (mut nodes, mut links) = load_graph();
             (nodes, links) = discretize(nodes, links, delta);
+            metrics(&nodes, &links, ("5", delta.to_string()));
             print_graph(&nodes, &links);
         }
     }
