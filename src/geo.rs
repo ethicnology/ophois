@@ -34,7 +34,7 @@ pub fn get_point_from_line(a: &Point, b: &Point, part: f32) -> Point {
 mod tests {
     use super::*;
     #[test]
-    fn test_x() {
+    fn test_midpoint() {
         let a = Point {
             x: 2.3484976,
             y: 48.8275185,
@@ -54,7 +54,7 @@ mod tests {
     }
 
     #[test]
-    fn test_y() {
+    fn test_a_get_point_from_line() {
         let a = Point { x: -4.0, y: 1.0 };
         let b = Point { x: 8.0, y: 7.0 };
         assert_eq!(
@@ -67,7 +67,7 @@ mod tests {
         );
     }
     #[test]
-    fn test_z() {
+    fn test_b_get_point_from_line() {
         let a = Point {
             x: 2.3484976,
             y: 48.8275185,
