@@ -57,30 +57,30 @@ pub fn format_xml() {
     }
 }
 
-pub fn extract_nodes() {
+fn extract_node(row: String) {
+    let node: Node = from_str(&row).unwrap();
+    let mut data: String = "".to_owned();
+    let coordinates = format!("{}{}{}{}", separator(), node.lat, separator(), node.lon);
+    data.push_str(&coordinates);
+    println!("{}{}", node.id, data);
+}
+
+fn extract_link(row: String) {
+    let way: Ways = from_str(&row).unwrap();
+    let nodes = way.nodes;
+    for i in 0..nodes.len() - 1 {
+        println!("{}{}{}", nodes[i].r#ref, separator(), nodes[i + 1].r#ref,);
+    }
+}
+
+pub fn extract() {
     let input = io::stdin();
     for line in input.lock().lines() {
         let row = line.unwrap();
         if row.starts_with("<node") {
-            let node: Node = from_str(&row).unwrap();
-            let mut data: String = "".to_owned();
-            let coordinates = format!("{}{}{}{}", separator(), node.lat, separator(), node.lon);
-            data.push_str(&coordinates);
-            println!("{}{}", node.id, data);
-        }
-    }
-}
-
-pub fn extract_links() {
-    let input = io::stdin();
-    for line in input.lock().lines() {
-        let row = line.unwrap();
-        if row.starts_with("<way") {
-            let way: Ways = from_str(&row).unwrap();
-            let nodes = way.nodes;
-            for i in 0..nodes.len() - 1 {
-                println!("{}{}{}", nodes[i].r#ref, separator(), nodes[i + 1].r#ref,);
-            }
+            extract_node(row);
+        } else if row.starts_with("<way") {
+            extract_link(row);
         }
     }
 }
