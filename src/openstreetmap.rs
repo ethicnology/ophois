@@ -1,4 +1,3 @@
-use crate::separator;
 use quick_xml::de::from_str;
 use serde::Deserialize;
 use std::io;
@@ -57,30 +56,30 @@ pub fn format_xml() {
     }
 }
 
-fn extract_node(row: String) {
+fn extract_node(row: String, separator: char) {
     let node: Node = from_str(&row).unwrap();
     let mut data: String = "".to_owned();
-    let coordinates = format!("{}{}{}{}", separator(), node.lat, separator(), node.lon);
+    let coordinates = format!("{}{}{}{}", separator, node.lat, separator, node.lon);
     data.push_str(&coordinates);
     println!("{}{}", node.id, data);
 }
 
-fn extract_link(row: String) {
+fn extract_link(row: String, separator: char) {
     let way: Ways = from_str(&row).unwrap();
     let nodes = way.nodes;
     for i in 0..nodes.len() - 1 {
-        println!("{}{}{}", nodes[i].r#ref, separator(), nodes[i + 1].r#ref,);
+        println!("{}{}{}", nodes[i].r#ref, separator, nodes[i + 1].r#ref,);
     }
 }
 
-pub fn extract() {
+pub fn extract(separator: char) {
     let input = io::stdin();
     for line in input.lock().lines() {
         let row = line.unwrap();
         if row.starts_with("<node") {
-            extract_node(row);
+            extract_node(row, separator);
         } else if row.starts_with("<way") {
-            extract_link(row);
+            extract_link(row, separator);
         }
     }
 }

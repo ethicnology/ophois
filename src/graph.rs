@@ -1,4 +1,3 @@
-use crate::separator;
 use crate::Point;
 use std::collections::{HashMap, HashSet};
 use std::io::{self, BufRead};
@@ -62,7 +61,10 @@ impl Graph {
                     graph.insert_link((data[0].to_string(), data[1].to_string()));
                     graph.insert_link((data[1].to_string(), data[0].to_string()));
                 }
-                _ => panic!("Wrong input length!\nnode=id\nlink=node_id node_id"),
+                _ => panic!(
+                    "Wrong input length -> {}!\nnode=id\nlink=node_id node_id",
+                    data.len()
+                ),
             }
         }
         return graph;
@@ -93,14 +95,14 @@ impl Graph {
         return graph;
     }
 
-    pub fn show(&self) {
+    pub fn show(&self, separator: char) {
         for (_, node) in self.nodes.iter() {
             println!(
                 "{}{}{}{}{}",
                 node.id,
-                separator(),
+                separator,
                 node.latitude,
-                separator(),
+                separator,
                 node.longitude
             )
         }
@@ -112,7 +114,7 @@ impl Graph {
                 (link.1.to_owned(), link.0.to_owned())
             };
             if !printed.contains(&formatted_link) {
-                println!("{}{}{}", formatted_link.0, separator(), formatted_link.1);
+                println!("{}{}{}", formatted_link.0, separator, formatted_link.1);
                 printed.insert(formatted_link);
             }
         }
