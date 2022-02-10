@@ -99,7 +99,11 @@ impl Graph {
         for (_, node) in self.nodes.iter() {
             println!(
                 "{}{}{}{}{}",
-                node.id, separator, node.latitude, separator, node.longitude
+                node.id,
+                separator,
+                node.latitude,
+                separator,
+                node.longitude
             )
         }
         let mut printed: HashSet<(String, String)> = HashSet::new();

@@ -15,12 +15,8 @@ use overpass::*;
 #[clap(author, version, bin_name = "osmtograph")]
 enum OsmToGraph {
     Download {
-        /// Select any available cities/areas in overpass-api: Pantin, Damas, Mexico, Paris, London, Tokyo, Moscow…
         #[clap(short, long)]
         city: String,
-        /// ⚠With caution⚠: please learn overpass QL. City variable is stored in 'area'.
-        #[clap(short, long, default_value = "(way(area)[highway]; ); (._;>;);")]
-        overpassql: String,
     },
     Format,
     Extract {
@@ -37,7 +33,7 @@ enum OsmToGraph {
 
 fn main() {
     match OsmToGraph::parse() {
-        OsmToGraph::Download { city, overpassql } => download_map(city, overpassql).unwrap(),
+        OsmToGraph::Download { city } => download_map(city).unwrap(),
         OsmToGraph::Format => format_xml(),
         OsmToGraph::Extract { separator } => extract(separator),
         OsmToGraph::Heuristics { separator } => {
