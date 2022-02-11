@@ -1,18 +1,18 @@
 #[derive(Debug, PartialEq)]
 pub struct Point {
-    pub x: f32,
-    pub y: f32,
+    pub x: f64,
+    pub y: f64,
 }
 
-pub fn haversine_distance(a: &Point, b: &Point) -> f32 {
-    let r: f32 = 6356752.0; // earth radius in meters
-    let d_lat: f32 = (b.y - a.y).to_radians();
-    let d_lon: f32 = (b.x - a.x).to_radians();
-    let lat1: f32 = a.y.to_radians();
-    let lat2: f32 = b.y.to_radians();
-    let a: f32 = ((d_lat / 2.0).sin()) * ((d_lat / 2.0).sin())
+pub fn haversine_distance(a: &Point, b: &Point) -> f64 {
+    let r: f64 = 6371008.7714; // IUGG  mean earth radius
+    let d_lat: f64 = (b.y - a.y).to_radians();
+    let d_lon: f64 = (b.x - a.x).to_radians();
+    let lat1: f64 = a.y.to_radians();
+    let lat2: f64 = b.y.to_radians();
+    let a: f64 = ((d_lat / 2.0).sin()) * ((d_lat / 2.0).sin())
         + ((d_lon / 2.0).sin()) * ((d_lon / 2.0).sin()) * (lat1.cos()) * (lat2.cos());
-    let c: f32 = 2.0 * ((a.sqrt()).atan2((1.0 - a).sqrt()));
+    let c: f64 = 2.0 * ((a.sqrt()).atan2((1.0 - a).sqrt()));
     return r * c;
 }
 
@@ -23,7 +23,7 @@ pub fn midpoint(a: &Point, b: &Point) -> Point {
     };
 }
 
-pub fn get_point_from_line(a: &Point, b: &Point, part: f32) -> Point {
+pub fn get_point_from_line(a: &Point, b: &Point, part: f64) -> Point {
     return Point {
         x: a.x + (part * (b.x - a.x)),
         y: a.y + (part * (b.y - a.y)),
@@ -46,8 +46,8 @@ mod tests {
         assert_eq!(
             midpoint(&a, &b),
             Point {
-                x: 2.348583,
-                y: 48.82753
+                x: 2.34858295,
+                y: 48.82753005
             }
         );
         assert_eq!(midpoint(&a, &b), get_point_from_line(&a, &b, 1.0 / 2.0));
@@ -79,8 +79,8 @@ mod tests {
         assert_eq!(
             get_point_from_line(&a, &b, 1.0 / 3.0),
             Point {
-                x: 2.3485546,
-                y: 48.827526
+                x: 2.3485545,
+                y: 48.8275262
             }
         );
         //3758221295-3761637488-1/3␟lat␟48.827526␟lon␟2.3485546
@@ -88,7 +88,7 @@ mod tests {
             get_point_from_line(&a, &b, 2.0 / 3.0),
             Point {
                 x: 2.3486114,
-                y: 48.827534
+                y: 48.8275339
             }
         );
         //3758221295-3761637488-2/3␟lat␟48.827534␟lon␟2.3486114
