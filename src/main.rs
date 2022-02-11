@@ -10,6 +10,8 @@ use graph::*;
 use heuristics::*;
 use openstreetmap::*;
 use overpass::*;
+use std::io;
+use std::io::prelude::*;
 
 #[derive(Parser)]
 #[clap(author, version, bin_name = "osmtograph")]
@@ -42,7 +44,11 @@ fn main() {
     match OsmToGraph::parse() {
         OsmToGraph::Download { city, overpassql } => download_map(city, overpassql).unwrap(),
         OsmToGraph::Format => format_xml(),
-        OsmToGraph::Extract { separator } => extract(separator),
+        OsmToGraph::Extract { separator } => {
+            for line in io::stdin().lock().lines() {
+                extract(line.unwrap(), separator);
+            }
+        }
         OsmToGraph::Heuristics { separator, delta } => {
             let mut graph = Graph::load(separator);
             graph = bfs_largest_component(graph);
