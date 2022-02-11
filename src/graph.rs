@@ -13,7 +13,7 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new(id: String) -> Node {
+    pub fn _new(id: String) -> Node {
         return Node {
             id: id,
             latitude: "".to_string(),
@@ -44,7 +44,7 @@ impl Graph {
         };
     }
 
-    pub fn from(input: &str, separator: char) -> Graph {
+    pub fn _from(input: &str, separator: char) -> Graph {
         let mut graph = Graph::new();
         for line in input.lines() {
             let data: Vec<&str> = line.split(separator).collect();
@@ -135,10 +135,6 @@ impl Graph {
         return self.nodes.get(node_id).unwrap();
     }
 
-    pub fn get_link(&self, link: &Link) -> &usize {
-        return self.links.get(link).unwrap();
-    }
-
     pub fn insert_link(&mut self, link: Link) {
         let (source_id, target_id) = link;
         let source = self.nodes.get_mut(&source_id).unwrap();
@@ -170,7 +166,7 @@ mod tests {
     fn insert_node() {
         let mut graph = Graph::new();
         let node_id = "u".to_string();
-        graph.insert_node(Node::new(node_id.clone()));
+        graph.insert_node(Node::_new(node_id.clone()));
         let is_contained = graph.nodes.contains_key(&node_id);
         assert_eq!(is_contained, true);
     }
@@ -179,8 +175,8 @@ mod tests {
         let mut graph = Graph::new();
         let u = "u".to_string();
         let v = "v".to_string();
-        graph.insert_node(Node::new(u.clone()));
-        graph.insert_node(Node::new(v.clone()));
+        graph.insert_node(Node::_new(u.clone()));
+        graph.insert_node(Node::_new(v.clone()));
         graph.insert_link((u.clone(), v.clone()));
         graph.insert_link((v.clone(), u.clone()));
         assert_eq!(graph.get_node(&u).neighbours[0], v);
@@ -191,9 +187,9 @@ mod tests {
         let u = "u".to_string();
         let v = "v".to_string();
         let w = "w".to_string();
-        graph.insert_node(Node::new(u.clone()));
-        graph.insert_node(Node::new(v.clone()));
-        graph.insert_node(Node::new(w.clone()));
+        graph.insert_node(Node::_new(u.clone()));
+        graph.insert_node(Node::_new(v.clone()));
+        graph.insert_node(Node::_new(w.clone()));
         graph.insert_link((u.clone(), v.clone()));
         graph.insert_link((v.clone(), u.clone()));
         graph.insert_link((v.clone(), w.clone()));
@@ -208,22 +204,10 @@ mod tests {
     }
 
     #[test]
-    fn get_link() {
-        let mut graph = Graph::new();
-        let u = "u".to_string();
-        let v = "v".to_string();
-        graph.insert_node(Node::new(u.clone()));
-        graph.insert_node(Node::new(v.clone()));
-        graph.insert_link((u.clone(), v.clone()));
-        graph.insert_link((v.clone(), u.clone()));
-        assert_eq!(graph.get_link(&(u, v)), &0);
-    }
-
-    #[test]
     fn remove_node_without_neighbours() {
         let mut graph = Graph::new();
         let node_id = "u".to_string();
-        graph.insert_node(Node::new(node_id.clone()));
+        graph.insert_node(Node::_new(node_id.clone()));
         graph.remove_node(&node_id);
         let is_contained = graph.nodes.contains_key(&node_id);
         assert_eq!(is_contained, false);
@@ -234,9 +218,9 @@ mod tests {
         let u = "u".to_string();
         let v = "v".to_string();
         let w = "w".to_string();
-        graph.insert_node(Node::new(u.clone()));
-        graph.insert_node(Node::new(v.clone()));
-        graph.insert_node(Node::new(w.clone()));
+        graph.insert_node(Node::_new(u.clone()));
+        graph.insert_node(Node::_new(v.clone()));
+        graph.insert_node(Node::_new(w.clone()));
         graph.insert_link((u.clone(), v.clone()));
         graph.insert_link((v.clone(), u.clone()));
         graph.insert_link((v.clone(), w.clone()));
