@@ -14,8 +14,8 @@ use std::io;
 use std::io::prelude::*;
 
 #[derive(Parser)]
-#[clap(author, version, bin_name = "osmtograph")]
-enum OsmToGraph {
+#[clap(author, about, version, bin_name = "ophois")]
+enum Ophois {
     Download {
         /// Select any available cities/areas in overpass-api: Pantin, Damas, Mexico, Paris, London, Tokyo, Moscow…
         #[clap(short, long)]
@@ -41,15 +41,15 @@ enum OsmToGraph {
 }
 
 fn main() {
-    match OsmToGraph::parse() {
-        OsmToGraph::Download { city, overpassql } => download_map(city, overpassql).unwrap(),
-        OsmToGraph::Format => format_xml(),
-        OsmToGraph::Extract { separator } => {
+    match Ophois::parse() {
+        Ophois::Download { city, overpassql } => download_map(city, overpassql).unwrap(),
+        Ophois::Format => format_xml(),
+        Ophois::Extract { separator } => {
             for line in io::stdin().lock().lines() {
                 extract(line.unwrap(), separator);
             }
         }
-        OsmToGraph::Heuristics { separator, delta } => {
+        Ophois::Heuristics { separator, delta } => {
             let mut graph = Graph::load(separator);
             graph = bfs_largest_component(graph);
             graph = remove_degree_two_nodes(graph);

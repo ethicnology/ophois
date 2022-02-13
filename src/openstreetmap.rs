@@ -95,7 +95,7 @@ mod tests {
         let line = "<node id=\"618904\" lat=\"50.6011263\" lon=\"3.2519549\"/>";
         assert!(extract_node(line.to_owned(), '␟') == "618904␟50.6011263␟3.2519549")
     }
-    
+
     #[test]
     fn test_extract_link() {
         let line = "<way id=\"951505353\"><nd ref=\"8807254574\"/><nd ref=\"8807254575\"/><nd ref=\"8507963130\"/><tag k=\"highway\" v=\"residential\"/></way>";
