@@ -78,16 +78,21 @@ impl Graph {
             let data: Vec<&str> = line.split(separator).collect();
             match data.len() {
                 3 => {
-                    graph.insert_node(Node {
-                        id: data[0].to_string(),
-                        latitude: data[1].to_string(),
-                        longitude: data[2].to_string(),
-                        neighbours: Vec::new(),
-                    });
+                    if !graph.nodes.contains_key(data[0]) {
+                        graph.insert_node(Node {
+                            id: data[0].to_string(),
+                            latitude: data[1].to_string(),
+                            longitude: data[2].to_string(),
+                            neighbours: Vec::new(),
+                        });
+                    }
                 }
                 2 => {
-                    graph.insert_link((data[0].to_string(), data[1].to_string()));
-                    graph.insert_link((data[1].to_string(), data[0].to_string()));
+                    let (u, v) = (data[0].to_string(), data[1].to_string());
+                    if !graph.contains_link((&u, &v)) && !graph.contains_link((&v, &u)) {
+                        graph.insert_link((u.clone(), v.clone()));
+                        graph.insert_link((v, u));
+                    }
                 }
                 _ => panic!("Wrong input length!\nnode=id\nlink=node_id node_id"),
             }
@@ -133,6 +138,10 @@ impl Graph {
 
     pub fn get_node(&self, node_id: &str) -> &Node {
         return self.nodes.get(node_id).unwrap();
+    }
+
+    pub fn contains_link(&self, (u, v): (&str, &str)) -> bool {
+        return self.links.contains_key(&(u.to_string(), v.to_string()));
     }
 
     pub fn insert_link(&mut self, link: Link) {
@@ -181,6 +190,19 @@ mod tests {
         graph.insert_link((v.clone(), u.clone()));
         assert_eq!(graph.get_node(&u).neighbours[0], v);
     }
+
+    #[test]
+    fn contains_link() {
+        let mut graph = Graph::new();
+        let u = "u".to_string();
+        let v = "v".to_string();
+        graph.insert_node(Node::_new(u.clone()));
+        graph.insert_node(Node::_new(v.clone()));
+        graph.insert_link((u.clone(), v.clone()));
+        graph.insert_link((v.clone(), u.clone()));
+        assert!(graph.contains_link((&u, &v)));
+    }
+
     #[test]
     fn insert_link() {
         let mut graph = Graph::new();
