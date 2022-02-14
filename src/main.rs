@@ -1,10 +1,13 @@
+mod discretize;
 mod geo;
 mod graph;
 mod heuristics;
 mod openstreetmap;
 mod overpass;
+mod utils;
 
 use clap::Parser;
+use discretize::*;
 use geo::*;
 use graph::*;
 use heuristics::*;
@@ -12,6 +15,7 @@ use openstreetmap::*;
 use overpass::*;
 use std::io;
 use std::io::prelude::*;
+use utils::*;
 
 #[derive(Parser)]
 #[clap(author, about, version, bin_name = "ophois")]
@@ -26,12 +30,20 @@ enum Ophois {
     },
     Format,
     Extract {
-        /// Specify a custom separator such as space: -s ' '. Beware that data already contains the dot '.' and comma ','
+        /// Specify a custom separator such as space: -s ' '. Beware that data already contains: [.-:/]
         #[clap(short, long, default_value_t = '␟')]
         separator: char,
     },
     Simplify {
-        /// Specify a custom separator such as space: -s ' '. Beware that data already contains the dot '.' and comma ','
+        /// Specify a custom separator such as space: -s ' '. Beware that data already contains: [.-:/]
+        #[clap(short, long, default_value_t = '␟')]
+        separator: char,
+        /// Delta is expressed in meters
+        #[clap(short, long)]
+        delta: f64,
+    },
+    Discretize {
+        /// Specify a custom separator such as space: -s ' '. Beware that data already contains: [.-:/]
         #[clap(short, long, default_value_t = '␟')]
         separator: char,
         /// Delta is expressed in meters
@@ -55,6 +67,11 @@ fn main() {
             graph = remove_degree_two_nodes(graph);
             graph = remove_under_delta_nodes(graph, delta);
             graph = remove_under_delta_links(graph, delta);
+            graph.show(separator);
+        }
+        Ophois::Discretize { separator, delta } => {
+            let mut graph = Graph::load(separator);
+            graph = discretize(graph, delta);
             graph.show(separator);
         }
     }
