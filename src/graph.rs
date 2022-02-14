@@ -1,3 +1,4 @@
+use crate::determinist;
 use crate::Point;
 use std::collections::{HashMap, HashSet};
 use std::io::{self, BufRead};
@@ -108,15 +109,13 @@ impl Graph {
             )
         }
         let mut printed: HashSet<(String, String)> = HashSet::new();
-        for (link, _) in self.links.iter() {
-            let formatted_link = if link.0 < link.1 {
-                (link.0.to_owned(), link.1.to_owned())
-            } else {
-                (link.1.to_owned(), link.0.to_owned())
-            };
-            if !printed.contains(&formatted_link) {
-                println!("{}{}{}", formatted_link.0, separator, formatted_link.1);
-                printed.insert(formatted_link);
+        for ((u, v), _) in self.links.iter() {
+            let (source, target) = determinist(u.clone(), v.clone());
+            if !printed.contains(&(source.clone(), target.clone()))
+                && !printed.contains(&(target.clone(), source.clone()))
+            {
+                printed.insert((source.clone(), target.clone()));
+                println!("{}{}{}", source, separator, target);
             }
         }
     }
