@@ -30,7 +30,7 @@ enum Ophois {
         #[clap(short, long, default_value_t = '␟')]
         separator: char,
     },
-    Heuristics {
+    Simplify {
         /// Specify a custom separator such as space: -s ' '. Beware that data already contains the dot '.' and comma ','
         #[clap(short, long, default_value_t = '␟')]
         separator: char,
@@ -49,7 +49,7 @@ fn main() {
                 extract(line.unwrap(), separator);
             }
         }
-        Ophois::Heuristics { separator, delta } => {
+        Ophois::Simplify { separator, delta } => {
             let mut graph = Graph::load(separator);
             graph = bfs_largest_component(graph);
             graph = remove_degree_two_nodes(graph);
