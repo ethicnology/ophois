@@ -13,15 +13,13 @@ Download the
 cargo build --release # >= Rust 1.58
 ```
 
-## usage
-
-### Download a map
+## :one: download a map
 
 ```sh
 ophois download --city Pantin
 ```
 
-### extract
+## :two: extract
 
 ```sh
 CITY=Pantin; cat $CITY.osm | ophois format | ophois extract > $CITY-raw.graph
@@ -33,37 +31,37 @@ CITY=Pantin; cat $CITY.osm | ophois format | ophois extract > $CITY-raw.graph
 CITY=Pantin; cat $CITY.osm | ./ophois format | ./ophois extract --separator ' ' > $CITY-raw.graph
 ```
 
-### simplify
+## :three: simplify
 
-#### keep the largest component, remove degree two nodes, replace nodes with under delta links by links and replace links (and nodes) which distance is under delta by a midpoint node connected to neighbours
+### keep the largest component, remove degree two nodes, replace nodes with under delta links by links and replace links (and nodes) which distance is under delta by a midpoint node connected to neighbours
 
 ```sh
 CITY=Pantin; cat $CITY-raw.graph | ./ophois simplify --delta 10.0 > $CITY-simplified.graph
 ```
 
-#### raw input
+### raw input
 
 ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/cailles.png)
 
-#### remove degree two nodes
+### remove degree two nodes
 
 ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_degree_two_nodes_after.png)
 
-#### replace nodes that only have distance links less than delta with links between their neighbours
+### replace nodes that only have distance links less than delta with links between their neighbours
 
 ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_nodes_after_delta=6.png)
 
 > **_NOTE:_** delta=6
 
-#### replace links (including nodes) which are under delta distance by a midpoint node
+### replace links (including nodes) which are under delta distance by a midpoint node
 
 ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_links_after_delta=6.png)
 
 > **_NOTE:_** delta=6
 
-### discretize
+## :five: discretize
 
-#### split links that have distance over 2*delta in equal parts
+### split links that have distance over 2*delta in equal parts
 
 ```sh
 CITY=Pantin; cat $CITY-simplified.graph | ./ophois discretize --delta 6.0 > $CITY-discretized.graph
@@ -73,7 +71,7 @@ CITY=Pantin; cat $CITY-simplified.graph | ./ophois discretize --delta 6.0 > $CIT
 
 > **_NOTE:_** delta=6
 
-### single line simplify and discretize
+## one line simplify and discretize
 
 ```sh
 CITY=Pantin; ./ophois download --city $CITY; cat $CITY.osm | ./ophois format | ./ophois extract | ./ophois simplify --delta 10 | ./ophois discretize --delta 5 > $CITY.graph
@@ -86,8 +84,6 @@ CITY=Pantin; ./ophois download --city $CITY; cat $CITY.osm | ./ophois format | .
 ```
 
 ## output
-
-### graph file
 
 > **_NOTE:_** Default separator is "**␟**" ASCII 31 (0x1F) Unit Separator
 
