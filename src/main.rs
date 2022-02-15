@@ -2,6 +2,7 @@ mod discretize;
 mod geo;
 mod graph;
 mod heuristics;
+mod metrics;
 mod openstreetmap;
 mod overpass;
 mod utils;
@@ -11,6 +12,7 @@ use discretize::*;
 use geo::*;
 use graph::*;
 use heuristics::*;
+use metrics::*;
 use openstreetmap::*;
 use overpass::*;
 use std::io;
@@ -67,11 +69,13 @@ fn main() {
             graph = remove_degree_two_nodes(graph);
             graph = remove_under_delta_nodes(graph, delta);
             graph = remove_under_delta_links(graph, delta);
+            metrics(&graph, format!("simplify={}", delta));
             graph.show(separator);
         }
         Ophois::Discretize { separator, delta } => {
             let mut graph = Graph::load(separator);
             graph = discretize(graph, delta);
+            metrics(&graph, format!("discretize={}", delta));
             graph.show(separator);
         }
     }
