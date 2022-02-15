@@ -16,13 +16,13 @@ cargo build --release # >= Rust 1.58
 ## :one: download a map
 
 ```sh
-ophois download --city Pantin
+./ophois download --city Pantin
 ```
 
 ## :two: extract
 
 ```sh
-CITY=Pantin; cat $CITY.osm | ophois format | ophois extract > $CITY-raw.graph
+CITY=Pantin; cat $CITY.osm | ./ophois format | ophois extract > $CITY-raw.graph
 ```
 
 **same command with space separator**
