@@ -1,17 +1,19 @@
 [package]
-name = "osmtograph"
-version = "0.2.0"
+name = "ophois"
+version = "0.3.0"
 authors = ["Jules Azad EMERY a.k.a. ethicnology <ethicnology@pm.me>"]
 edition = "2021"
-description = "osmtograph extract streets graph object from OpenStreetMap data"
+description = "Ophoïs, the opener of the ways, creates streets graph from OpenStreetMap"
 readme = "README.md"
 repository = "https://github.com/ethicnology/osmtograph"
 license = "GPL-3.0-or-later"
-keywords = ["OpenStreetMap", "OSM", "graph", "streets", "network", "map"]
+keywords = ["OpenStreetMap", "OSM", "graph", "streets", "network", "map", "highway", "way"]
 categories = ["command-line-utilities"]
 
 
 [dependencies]
+reqwest = { version = "0.11" }
+tokio = { version = "1", features = ["full"] }
 clap = { version = "3.0.10", features = ["derive"] }
 serde = { version = "1.0", features = [ "derive" ] }
 quick-xml = { version = "0.22", features = [ "serialize" ] }

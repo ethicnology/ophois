@@ -1,4 +1,3 @@
-use crate::separator;
 use quick_xml::de::from_str;
 use serde::Deserialize;
 use std::io;
@@ -57,30 +56,50 @@ pub fn format_xml() {
     }
 }
 
-pub fn extract_nodes() {
-    let input = io::stdin();
-    for line in input.lock().lines() {
-        let row = line.unwrap();
-        if row.starts_with("<node") {
-            let node: Node = from_str(&row).unwrap();
-            let mut data: String = "".to_owned();
-            let coordinates = format!("{}{}{}{}", separator(), node.lat, separator(), node.lon);
-            data.push_str(&coordinates);
-            println!("{}{}", node.id, data);
-        }
+fn extract_node(line: String, separator: char) -> String {
+    let node: Node = from_str(&line).unwrap();
+    return format!(
+        "{}{}{}{}{}",
+        node.id, separator, node.lat, separator, node.lon
+    );
+}
+
+fn extract_link(line: String, separator: char) -> String {
+    let way: Ways = from_str(&line).unwrap();
+    let nodes = way.nodes;
+    let mut output: Vec<String> = vec![];
+    for i in 0..nodes.len() - 1 {
+        output.push(format!(
+            "{}{}{}\n",
+            nodes[i].r#ref,
+            separator,
+            nodes[i + 1].r#ref
+        ));
+    }
+    return output.join("");
+}
+
+pub fn extract(line: String, separator: char) {
+    if line.starts_with("<node") {
+        println!("{}", extract_node(line, separator));
+    } else if line.starts_with("<way") {
+        print!("{}", extract_link(line, separator));
     }
 }
 
-pub fn extract_links() {
-    let input = io::stdin();
-    for line in input.lock().lines() {
-        let row = line.unwrap();
-        if row.starts_with("<way") {
-            let way: Ways = from_str(&row).unwrap();
-            let nodes = way.nodes;
-            for i in 0..nodes.len() - 1 {
-                println!("{}{}{}", nodes[i].r#ref, separator(), nodes[i + 1].r#ref,);
-            }
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_extract_node() {
+        let line = "<node id=\"618904\" lat=\"50.6011263\" lon=\"3.2519549\"/>";
+        assert!(extract_node(line.to_owned(), '␟') == "618904␟50.6011263␟3.2519549")
+    }
+
+    #[test]
+    fn test_extract_link() {
+        let line = "<way id=\"951505353\"><nd ref=\"8807254574\"/><nd ref=\"8807254575\"/><nd ref=\"8507963130\"/><tag k=\"highway\" v=\"residential\"/></way>";
+        let expected = "8807254574␟8807254575\n8807254575␟8507963130\n";
+        assert!(extract_link(line.to_owned(), '␟') == expected)
     }
 }
