@@ -13,7 +13,7 @@ Download the
 cargo build --release # >= Rust 1.58
 ```
 
-## procedure
+## usage
 
 ### Download a map
 
@@ -41,13 +41,34 @@ CITY=Pantin; cat $CITY.osm | ./ophois format | ./ophois extract --separator ' ' 
 CITY=Pantin; cat $CITY-raw.graph | ./ophois simplify --delta 10.0 > $CITY-simplified.graph
 ```
 
+#### input
+
+![](https://github.com/ethicnology/osmtograph/blob/main/datasets/cailles.png)
+
+#### remove degree two nodes
+
+![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_degree_two_nodes_after.png)
+
+#### replace nodes that only have distance links less than delta with links between their neighbours
+
+> **_NOTE:_** delta=6
+> ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_nodes_after.png)
+
+#### replace links (including nodes) which are under delta distance by a midpoint node
+
+> **_NOTE:_** delta=6
+> ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_links_after.png)
+
 ### Discretize
 
-#### graph in equal parts which are between delta and delta*2
+#### Split links that have distance over 2*delta in equal parts
 
 ```sh
-CITY=Pantin; cat $CITY-simplified.graph | ./ophois discretize --delta 5.0 > $CITY-discretized.graph
+CITY=Pantin; cat $CITY-simplified.graph | ./ophois discretize --delta 6.0 > $CITY-discretized.graph
 ```
+
+> **_NOTE:_** delta=6
+> ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_discretize_after_delta=6.png)
 
 ### One line simplify and discretize
 
