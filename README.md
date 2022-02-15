@@ -41,7 +41,7 @@ CITY=Pantin; cat $CITY.osm | ./ophois format | ./ophois extract --separator ' ' 
 CITY=Pantin; cat $CITY-raw.graph | ./ophois simplify --delta 10.0 > $CITY-simplified.graph
 ```
 
-#### input
+#### raw input
 
 ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/cailles.png)
 
