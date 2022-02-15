@@ -33,7 +33,7 @@ CITY=Pantin; cat $CITY.osm | ophois format | ophois extract > $CITY-raw.graph
 CITY=Pantin; cat $CITY.osm | ./ophois format | ./ophois extract --separator ' ' > $CITY-raw.graph
 ```
 
-### Simplify
+### simplify
 
 #### keep the largest component, remove degree two nodes, replace nodes with under delta links by links and replace links (and nodes) which distance is under delta by a midpoint node connected to neighbours
 
@@ -51,26 +51,29 @@ CITY=Pantin; cat $CITY-raw.graph | ./ophois simplify --delta 10.0 > $CITY-simpli
 
 #### replace nodes that only have distance links less than delta with links between their neighbours
 
+![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_nodes_after_delta=6.png)
+
 > **_NOTE:_** delta=6
-> ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_nodes_after_delta=6.png)
 
 #### replace links (including nodes) which are under delta distance by a midpoint node
 
+![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_links_after_delta=6.png)
+
 > **_NOTE:_** delta=6
-> ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_links_after_delta=6.png)
 
-### Discretize
+### discretize
 
-#### Split links that have distance over 2*delta in equal parts
+#### split links that have distance over 2*delta in equal parts
 
 ```sh
 CITY=Pantin; cat $CITY-simplified.graph | ./ophois discretize --delta 6.0 > $CITY-discretized.graph
 ```
 
-> **_NOTE:_** delta=6
-> ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_discretize_after_delta=6.png)
+![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_discretize_after_delta=6.png)
 
-### One line simplify and discretize
+> **_NOTE:_** delta=6
+
+### single line simplify and discretize
 
 ```sh
 CITY=Pantin; ./ophois download --city $CITY; cat $CITY.osm | ./ophois format | ./ophois extract | ./ophois simplify --delta 10 | ./ophois discretize --delta 5 > $CITY.graph
@@ -85,8 +88,6 @@ CITY=Pantin; ./ophois download --city $CITY; cat $CITY.osm | ./ophois format | .
 ## output
 
 ### graph file
-
-#### example
 
 > **_NOTE:_** Default separator is "**␟**" ASCII 31 (0x1F) Unit Separator
 
