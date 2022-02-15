@@ -1,4 +1,4 @@
-# Ophoïs, the opener of the ways, creates streets graph from OpenStreetMap
+# Ophoïs, creates streets graph from OpenStreetMap
 
 ## installation
 
@@ -52,12 +52,12 @@ CITY=Pantin; cat $CITY-raw.graph | ./ophois simplify --delta 10.0 > $CITY-simpli
 #### replace nodes that only have distance links less than delta with links between their neighbours
 
 > **_NOTE:_** delta=6
-> ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_nodes_after.png)
+> ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_nodes_after_delta=6.png)
 
 #### replace links (including nodes) which are under delta distance by a midpoint node
 
 > **_NOTE:_** delta=6
-> ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_links_after.png)
+> ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_remove_under_delta_links_after_delta=6.png)
 
 ### Discretize
 
