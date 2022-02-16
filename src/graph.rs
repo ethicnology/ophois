@@ -171,7 +171,7 @@ impl Graph {
 mod tests {
     use super::*;
     #[test]
-    fn insert_node() {
+    fn test_insert_node() {
         let mut graph = Graph::new();
         let node_id = "u".to_string();
         graph.insert_node(Node::_new(node_id.clone()));
@@ -179,7 +179,7 @@ mod tests {
         assert_eq!(is_contained, true);
     }
     #[test]
-    fn get_node() {
+    fn test_get_node() {
         let mut graph = Graph::new();
         let u = "u".to_string();
         let v = "v".to_string();
@@ -191,7 +191,7 @@ mod tests {
     }
 
     #[test]
-    fn contains_link() {
+    fn test_contains_link() {
         let mut graph = Graph::new();
         let u = "u".to_string();
         let v = "v".to_string();
@@ -203,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    fn insert_link() {
+    fn test_insert_link() {
         let mut graph = Graph::new();
         let u = "u".to_string();
         let v = "v".to_string();
@@ -225,7 +225,7 @@ mod tests {
     }
 
     #[test]
-    fn remove_node_without_neighbours() {
+    fn test_remove_node_without_neighbours() {
         let mut graph = Graph::new();
         let node_id = "u".to_string();
         graph.insert_node(Node::_new(node_id.clone()));
@@ -234,7 +234,7 @@ mod tests {
         assert_eq!(is_contained, false);
     }
     #[test]
-    fn remove_node_with_neighbours() {
+    fn test_remove_node_with_neighbours() {
         let mut graph = Graph::new();
         let u = "u".to_string();
         let v = "v".to_string();
