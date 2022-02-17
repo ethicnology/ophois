@@ -22,13 +22,13 @@ cargo build --release # >= Rust 1.58
 ## :two: extract
 
 ```sh
-CITY=Pantin; cat $CITY.osm | ./ophois format | ophois extract > $CITY-raw.graph
+CITY=Pantin; cat $CITY.osm | ./ophois format | ophois extract > $CITY-extracted.graph
 ```
 
 **same command with space separator**
 
 ```sh
-CITY=Pantin; cat $CITY.osm | ./ophois format | ./ophois extract --separator ' ' > $CITY-raw.graph
+CITY=Pantin; cat $CITY.osm | ./ophois format | ./ophois extract --separator ' ' > $CITY-extracted.graph
 ```
 
 ## :three: simplify
@@ -36,10 +36,10 @@ CITY=Pantin; cat $CITY.osm | ./ophois format | ./ophois extract --separator ' ' 
 **keep the largest component, remove degree two nodes, replace nodes with under delta links by links and replace links (and nodes) which distance is under delta by a midpoint node connected to neighbours**
 
 ```sh
-CITY=Pantin; cat $CITY-raw.graph | ./ophois simplify --delta 10.0 > $CITY-simplified.graph
+CITY=Pantin; cat $CITY-extracted.graph | ./ophois simplify --delta 10.0 > $CITY-simplified.graph
 ```
 
-### raw input
+### extracted input
 
 ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/cailles.png)
 
