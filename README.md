@@ -33,7 +33,7 @@ CITY=Pantin; cat $CITY.osm | ./ophois format | ./ophois extract --separator ' ' 
 
 ## :three: simplify
 
-### keep the largest component, remove degree two nodes, replace nodes with under delta links by links and replace links (and nodes) which distance is under delta by a midpoint node connected to neighbours
+**keep the largest component, remove degree two nodes, replace nodes with under delta links by links and replace links (and nodes) which distance is under delta by a midpoint node connected to neighbours**
 
 ```sh
 CITY=Pantin; cat $CITY-raw.graph | ./ophois simplify --delta 10.0 > $CITY-simplified.graph
@@ -101,3 +101,7 @@ node_id␟node_id
 3761637488␟48.8275416␟2.3486683
 3761637488␟3758221295 #represents a link
 ```
+
+## Authors
+* [ethicnology](https://github.com/ethicnology)
+* [Matthieu Latapy](https://www-complexnetworks.lip6.fr/~latapy/)
