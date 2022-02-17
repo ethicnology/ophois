@@ -1,12 +1,11 @@
-use crate::Graph;
-use std::collections::HashMap;
+use crate::{determinist, haversine_distance, Graph};
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::prelude::*;
 
 type Distribution = HashMap<u32, u32>;
 
 pub fn metrics(graph: &Graph, param: String) {
-    let degrees_distribution = degrees(graph);
     values_to_file(
         &format!("order_size_{}", param),
         order_size(graph).as_bytes(),
@@ -14,9 +13,14 @@ pub fn metrics(graph: &Graph, param: String) {
     .expect("graph size file");
     values_to_file(
         &format!("degrees_{}", param),
-        sort_and_stringify(degrees_distribution).as_bytes(),
+        sort_and_stringify(degrees(graph)).as_bytes(),
     )
-    .expect("distribution file");
+    .expect("degrees distribution file");
+    values_to_file(
+        &format!("lengths_{}", param),
+        sort_and_stringify(lengths(graph)).as_bytes(),
+    )
+    .expect("lengths distribution file");
 }
 
 fn degrees(graph: &Graph) -> Distribution {
@@ -24,6 +28,26 @@ fn degrees(graph: &Graph) -> Distribution {
     for (_, node) in graph.nodes.iter() {
         let degree = node.neighbours.len() as u32;
         *distribution.entry(degree).or_insert(0) += 1;
+    }
+    return distribution;
+}
+
+fn lengths(graph: &Graph) -> Distribution {
+    let mut distribution: Distribution = HashMap::new();
+    let mut visited: HashSet<(String, String)> = HashSet::new();
+    for ((u, v), _) in graph.links.iter() {
+        let (source, target) = determinist(u.clone(), v.clone());
+        if !visited.contains(&(source.clone(), target.clone()))
+            && !visited.contains(&(target.clone(), source.clone()))
+        {
+            let length = haversine_distance(
+                &graph.get_node(&source).point(),
+                &graph.get_node(&target).point(),
+            );
+            *distribution.entry(length as u32).or_insert(0) += 1;
+            visited.insert((source.clone(), target.clone()));
+            visited.insert((target.clone(), source.clone()));
+        }
     }
     return distribution;
 }
@@ -58,6 +82,34 @@ mod tests {
         let graph = Graph::_from("2576426859␟48.8275541␟2.3489099\n2576426853␟48.8274352␟2.348721\n3761637489␟48.8275453␟2.348698\n2576426856␟48.8275026␟2.3485468\n3758221284␟48.8273411␟2.3486982\n92192237␟48.8275872␟2.3490245\n3761637486␟48.8275249␟2.348704\n3761637488␟48.8275416␟2.3486683\n1829061602␟48.8275089␟2.3484223\n3758221301␟48.8275751␟2.3489308\n2268836829␟48.8276001␟2.3486802\n2576426850␟48.8274242␟2.3486471\n3761637482␟48.8274512␟2.3486719\n2576426858␟48.8275464␟2.3489207\n6400885441␟48.8274338␟2.3488187\n3758221295␟48.8275185␟2.3484976\n1852590201␟48.8276523␟2.3494784\n2576426854␟48.8274412␟2.3487844\n2576426851␟48.8274323␟2.3487423\n3758221292␟48.8274025␟2.3486929\n1829061614␟48.8273732␟2.3487375\n2576426855␟48.827493␟2.3485442\n2576426852␟48.8274347␟2.3487671\n3761637490␟48.8275499␟2.348735\n3761637496␟48.8278544␟2.3473522\n2576426847␟48.8273391␟2.3487858\n3758221301␟92192237\n2576426855␟3761637482\n1829061614␟3758221284\n1829061602␟3761637496\n1852590201␟92192237\n1829061614␟6400885441\n2576426853␟3761637482\n2576426851␟2576426852\n2576426850␟3761637482\n2576426855␟2576426856\n3758221301␟3761637490\n3761637482␟3761637486\n6400885441␟92192237\n3761637488␟3761637489\n1829061614␟3758221292\n1829061602␟2576426850\n3758221295␟3761637488\n3761637486␟3761637489\n2576426853␟3758221292\n1829061614␟2576426847\n3761637489␟3761637490\n2576426858␟2576426859\n2576426856␟3761637486\n2576426851␟2576426853\n2576426859␟3761637486\n1829061602␟3758221295\n2576426852␟2576426854\n2268836829␟3761637489\n2576426850␟3758221292\n2576426854␟2576426858", '␟');
         let distribution = degrees(&graph);
         let expected: Vec<(u32, u32)> = vec![(1, 5), (2, 12), (3, 5), (4, 4)];
+        for (x, y) in expected {
+            assert!(distribution.contains_key(&x));
+            assert!(distribution.get(&x).unwrap() == &y);
+        }
+    }
+
+    #[test]
+    fn test_lengths() {
+        let graph = Graph::_from("2576426859␟48.8275541␟2.3489099\n2576426853␟48.8274352␟2.348721\n3761637489␟48.8275453␟2.348698\n2576426856␟48.8275026␟2.3485468\n3758221284␟48.8273411␟2.3486982\n92192237␟48.8275872␟2.3490245\n3761637486␟48.8275249␟2.348704\n3761637488␟48.8275416␟2.3486683\n1829061602␟48.8275089␟2.3484223\n3758221301␟48.8275751␟2.3489308\n2268836829␟48.8276001␟2.3486802\n2576426850␟48.8274242␟2.3486471\n3761637482␟48.8274512␟2.3486719\n2576426858␟48.8275464␟2.3489207\n6400885441␟48.8274338␟2.3488187\n3758221295␟48.8275185␟2.3484976\n1852590201␟48.8276523␟2.3494784\n2576426854␟48.8274412␟2.3487844\n2576426851␟48.8274323␟2.3487423\n3758221292␟48.8274025␟2.3486929\n1829061614␟48.8273732␟2.3487375\n2576426855␟48.827493␟2.3485442\n2576426852␟48.8274347␟2.3487671\n3761637490␟48.8275499␟2.348735\n3761637496␟48.8278544␟2.3473522\n2576426847␟48.8273391␟2.3487858\n3758221301␟92192237\n2576426855␟3761637482\n1829061614␟3758221284\n1829061602␟3761637496\n1852590201␟92192237\n1829061614␟6400885441\n2576426853␟3761637482\n2576426851␟2576426852\n2576426850␟3761637482\n2576426855␟2576426856\n3758221301␟3761637490\n3761637482␟3761637486\n6400885441␟92192237\n3761637488␟3761637489\n1829061614␟3758221292\n1829061602␟2576426850\n3758221295␟3761637488\n3761637486␟3761637489\n2576426853␟3758221292\n1829061614␟2576426847\n3761637489␟3761637490\n2576426858␟2576426859\n2576426856␟3761637486\n2576426851␟2576426853\n2576426859␟3761637486\n1829061602␟3758221295\n2576426852␟2576426854\n2268836829␟3761637489\n2576426850␟3758221292\n2576426854␟2576426858", '␟');
+        let distribution = lengths(&graph);
+        let expected: Vec<(u32, u32)> = vec![
+            (1, 5),
+            (2, 3),
+            (3, 1),
+            (4, 5),
+            (5, 2),
+            (6, 2),
+            (8, 2),
+            (10, 1),
+            (11, 1),
+            (12, 1),
+            (14, 1),
+            (15, 2),
+            (18, 1),
+            (22, 1),
+            (34, 1),
+            (87, 1),
+        ];
         for (x, y) in expected {
             assert!(distribution.contains_key(&x));
             assert!(distribution.get(&x).unwrap() == &y);
