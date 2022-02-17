@@ -1,4 +1,4 @@
-# Ophoïs, creates streets graph from OpenStreetMap
+# Ophoïs, creates street graph from OpenStreetMap
 
 ## installation
 
