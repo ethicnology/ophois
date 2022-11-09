@@ -1,42 +1,53 @@
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)[![codecov](https://codecov.io/gh/ethicnology/ophois/branch/main/graph/badge.svg?token=YGE7F4GUCK)](https://codecov.io/gh/ethicnology/ophois)[![coverage](https://github.com/ethicnology/ophois/actions/workflows/coverage.yml/badge.svg)](https://github.com/ethicnology/ophois/actions/workflows/coverage.yml)
+
 # Ophoïs, creates street graph from OpenStreetMap
 
 ## installation
 
-### pre-built
+#### pre-built
 
 Download the
 [**lastest linux release**](https://github.com/ethicnology/ophois/releases)
 
-### build from sources
+If you trust/verified this code, make it executable and add it to your path
+```sh
+sudo chmod +x ophois
+sudo mv ophois /usr/local/bin
+```
+
+#### or build from sources
 
 ```sh
 cargo build --release # >= Rust 1.58
+# output should be in /target/release/ophois
 ```
 
 ## :one: download a map
 
 ```sh
-./ophois download --city Pantin
+CITY=Pantin # Save your city in an environment variable
+ophois download --city $CITY
 ```
 
 ## :two: extract
 
 ```sh
-CITY=Pantin; cat $CITY.osm | ./ophois format | ophois extract > $CITY-extracted.graph
+cat $CITY.osm | ophois format | ophois extract > $CITY-extracted.graph
 ```
 
 **same command with space separator**
+> **_NOTE:_** Default separator is "**␟**" ASCII 31 (0x1F) Unit Separator but you can use any suitable separator as long you specify it with **--separator**
 
 ```sh
-CITY=Pantin; cat $CITY.osm | ./ophois format | ./ophois extract --separator ' ' > $CITY-extracted.graph
+cat $CITY.osm | ophois format | ophois extract --separator ' ' > $CITY-extracted.graph
 ```
 
 ## :three: simplify
-
+The tool used to generate the following screenshots is [cartographe](https://ethicnology.github.io/cartographe/)  
 **keep the largest component, remove degree two nodes, replace nodes with under delta links by links and replace links (and nodes) which distance is under delta by a midpoint node connected to neighbours**
 
 ```sh
-CITY=Pantin; cat $CITY-extracted.graph | ./ophois simplify --delta 10.0 > $CITY-simplified.graph
+cat $CITY-extracted.graph | ophois simplify --delta 10.0 > $CITY-simplified.graph
 ```
 
 ### extracted input
@@ -59,12 +70,12 @@ CITY=Pantin; cat $CITY-extracted.graph | ./ophois simplify --delta 10.0 > $CITY-
 
 > **_NOTE:_** delta=6
 
-## :five: discretize
+## :four: discretize
 
 ### split links that have distance over 2*delta in equal parts
 
 ```sh
-CITY=Pantin; cat $CITY-simplified.graph | ./ophois discretize --delta 6.0 > $CITY-discretized.graph
+cat $CITY-simplified.graph | ophois discretize --delta 6.0 > $CITY-discretized.graph
 ```
 
 ![](https://github.com/ethicnology/osmtograph/blob/main/datasets/test_discretize_after_delta=6.png)
@@ -74,16 +85,16 @@ CITY=Pantin; cat $CITY-simplified.graph | ./ophois discretize --delta 6.0 > $CIT
 ## one line simplify and discretize
 
 ```sh
-CITY=Pantin; ./ophois download --city $CITY; cat $CITY.osm | ./ophois format | ./ophois extract | ./ophois simplify --delta 10 | ./ophois discretize --delta 5 > $CITY.graph
+ophois download --city $CITY; cat $CITY.osm | ophois format | ophois extract | ophois simplify --delta 10 | ophois discretize --delta 5 > $CITY.graph
 ```
 
 **same command with space separator**
 
 ```sh
-CITY=Pantin; ./ophois download --city $CITY; cat $CITY.osm | ./ophois format | ./ophois extract -s ' ' | ./ophois simplify -s ' ' -d 10 | ./ophois discretize -s ' ' -d 5 > $CITY.graph
+ophois download --city $CITY; cat $CITY.osm | ophois format | ophois extract -s ' ' | ophois simplify -s ' ' -d 10 | ophois discretize -s ' ' -d 5 > $CITY.graph
 ```
 
-## output
+## graph format
 
 > **_NOTE:_** Default separator is "**␟**" ASCII 31 (0x1F) Unit Separator
 
