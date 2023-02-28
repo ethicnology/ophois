@@ -113,6 +113,42 @@ node_id␟node_id
 3761637488␟3758221295 #represents a link
 ```
 
+#### Load ophois graph format into NetworkX
+```py
+import networkx as nx
+
+# Create an empty graph object
+G = nx.Graph()
+
+# Open the file for reading
+with open("ophois-graph.txt", "r") as f:
+    # Loop through each line in the file
+    for line in f:
+        # Remove any leading or trailing white space characters
+        line = line.strip()
+        # Split the line using the ␟ separator
+        fields = line.split('␟')
+        # Check the length of the line to determine whether it is a node or an edge
+        if len(fields) == 3:
+            # This is a node, add it to the graph
+            node_id = fields[0]
+            latitude = float(fields[1])
+            longitude = float(fields[2])
+            G.add_node(node_id, latitude=latitude, longitude=longitude)
+        elif len(fields) == 2:
+            # This is an edge, add it to the graph
+            node1 = fields[0]
+            node2 = fields[1]
+            G.add_edge(node1, node2)
+
+# Print the nodes and edges in the graph
+print("Nodes:", G.nodes())
+print("Edges:", G.edges())
+
+# Write the graph to a GraphML file
+nx.write_graphml(G, "output.graphml")
+```
+
 ## Authors
 * [ethicnology](https://github.com/ethicnology)
 * [Matthieu Latapy](https://www-complexnetworks.lip6.fr/~latapy/)
