@@ -19,6 +19,8 @@ use std::io;
 use std::io::prelude::*;
 use utils::*;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[derive(Parser)]
 #[clap(author, about, version, bin_name = "ophois")]
 enum Ophois {
@@ -29,6 +31,8 @@ enum Ophois {
         /// ⚠With caution⚠: please learn overpass QL. City variable is stored in 'area'.
         #[clap(short, long, default_value = "(way(area)[highway]; ); (._;>;);")]
         overpassql: String,
+        #[clap(short, long, default_value_t = format!("ophois/{} (https://github.com/ethicnology/ophois)", VERSION))]
+        user_agent: String,
     },
     Format,
     Extract {
@@ -56,7 +60,7 @@ enum Ophois {
 
 fn main() {
     match Ophois::parse() {
-        Ophois::Download { city, overpassql } => download_map(city, overpassql).unwrap(),
+        Ophois::Download { city, overpassql, user_agent } => download_map(city, overpassql, user_agent).unwrap(),
         Ophois::Format => format_xml(),
         Ophois::Extract { separator } => {
             for line in io::stdin().lock().lines() {

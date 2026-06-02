@@ -27,6 +27,8 @@ cargo build --release # >= Rust 1.58
 ```sh
 CITY=Pantin # Save your city in an environment variable
 ophois download --city $CITY
+
+ophois download --city $CITY --user-agent "custom-user-agent (user@example.com)" # Set custom User-Agent
 ```
 
 ## :two: extract
