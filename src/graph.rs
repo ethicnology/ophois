@@ -1,5 +1,5 @@
-use crate::determinist;
 use crate::Point;
+use crate::determinist;
 use std::collections::{HashMap, HashSet};
 use std::io::{self, BufRead};
 
@@ -15,19 +15,19 @@ pub struct Node {
 
 impl Node {
     pub fn _new(id: String) -> Node {
-        return Node {
-            id: id,
+        Node {
+            id,
             latitude: "".to_string(),
             longitude: "".to_string(),
             neighbours: Vec::new(),
-        };
+        }
     }
 
     pub fn point(&self) -> Point {
-        return Point {
+        Point {
             x: self.longitude.parse().unwrap(),
             y: self.latitude.parse().unwrap(),
-        };
+        }
     }
 }
 
@@ -39,10 +39,10 @@ pub struct Graph {
 
 impl Graph {
     pub fn new() -> Graph {
-        return Graph {
+        Graph {
             nodes: HashMap::new(),
             links: HashMap::new(),
-        };
+        }
     }
 
     pub fn _from(input: &str, separator: char) -> Graph {
@@ -68,7 +68,7 @@ impl Graph {
                 ),
             }
         }
-        return graph;
+        graph
     }
 
     pub fn load(separator: char) -> Graph {
@@ -98,7 +98,7 @@ impl Graph {
                 _ => panic!("Wrong input length!\nnode=id\nlink=node_id node_id"),
             }
         }
-        return graph;
+        graph
     }
 
     pub fn show(&self, separator: char) {
@@ -126,7 +126,7 @@ impl Graph {
 
     pub fn remove_node(&mut self, node_id: &str) {
         let node = self.nodes.get(node_id).unwrap().clone();
-        if node.neighbours.len() > 0 {
+        if !node.neighbours.is_empty() {
             for neighbour_id in node.neighbours {
                 self.remove_link(&(node_id.to_string(), neighbour_id.clone()));
                 self.remove_link(&(neighbour_id, node_id.to_string()));
@@ -136,11 +136,11 @@ impl Graph {
     }
 
     pub fn get_node(&self, node_id: &str) -> &Node {
-        return self.nodes.get(node_id).unwrap();
+        self.nodes.get(node_id).unwrap()
     }
 
     pub fn contains_link(&self, (u, v): (&str, &str)) -> bool {
-        return self.links.contains_key(&(u.to_string(), v.to_string()));
+        self.links.contains_key(&(u.to_string(), v.to_string()))
     }
 
     pub fn insert_link(&mut self, link: Link) {
@@ -152,11 +152,11 @@ impl Graph {
     }
 
     pub fn remove_link(&mut self, link: &Link) {
-        let index = self.links.get(&link).unwrap().clone();
-        self.links.remove(&link);
+        let index = *self.links.get(link).unwrap();
+        self.links.remove(link);
         let (source, _) = link;
         let node = self.nodes.get_mut(source).unwrap();
-        if node.neighbours.len() == 0 || index == node.neighbours.len() - 1 {
+        if node.neighbours.is_empty() || index == node.neighbours.len() - 1 {
             node.neighbours.swap_remove(index);
         } else {
             node.neighbours.swap_remove(index);
@@ -176,7 +176,7 @@ mod tests {
         let node_id = "u".to_string();
         graph.insert_node(Node::_new(node_id.clone()));
         let is_contained = graph.nodes.contains_key(&node_id);
-        assert_eq!(is_contained, true);
+        assert!(is_contained);
     }
     #[test]
     fn test_get_node() {
@@ -215,10 +215,10 @@ mod tests {
         graph.insert_link((v.clone(), u.clone()));
         graph.insert_link((v.clone(), w.clone()));
         graph.insert_link((w.clone(), v.clone()));
-        assert_eq!(graph.links.contains_key(&(u.clone(), v.clone())), true);
-        assert_eq!(graph.links.contains_key(&(v.clone(), u.clone())), true);
-        assert_eq!(graph.links.contains_key(&(v.clone(), w.clone())), true);
-        assert_eq!(graph.links.contains_key(&(w.clone(), v.clone())), true);
+        assert!(graph.links.contains_key(&(u.clone(), v.clone())));
+        assert!(graph.links.contains_key(&(v.clone(), u.clone())));
+        assert!(graph.links.contains_key(&(v.clone(), w.clone())));
+        assert!(graph.links.contains_key(&(w.clone(), v.clone())));
         assert_eq!(graph.links.get(&(u.clone(), v.clone())).unwrap(), &0);
         assert_eq!(graph.links.get(&(u, v.clone())).unwrap(), &0);
         assert_eq!(graph.links.get(&(v, w)).unwrap(), &1);
@@ -231,7 +231,7 @@ mod tests {
         graph.insert_node(Node::_new(node_id.clone()));
         graph.remove_node(&node_id);
         let is_contained = graph.nodes.contains_key(&node_id);
-        assert_eq!(is_contained, false);
+        assert!(!is_contained);
     }
     #[test]
     fn test_remove_node_with_neighbours() {
@@ -250,10 +250,10 @@ mod tests {
         let empty_vector: Vec<String> = vec![];
         assert_eq!(graph.get_node(&u).neighbours, empty_vector);
         assert_eq!(graph.get_node(&w).neighbours, empty_vector);
-        assert_eq!(graph.nodes.contains_key(&v), false);
-        assert_eq!(graph.links.contains_key(&(u.clone(), v.clone())), false);
-        assert_eq!(graph.links.contains_key(&(v.clone(), u.clone())), false);
-        assert_eq!(graph.links.contains_key(&(v.clone(), w.clone())), false);
-        assert_eq!(graph.links.contains_key(&(w, v)), false);
+        assert!(!graph.nodes.contains_key(&v));
+        assert!(!graph.links.contains_key(&(u.clone(), v.clone())));
+        assert!(!graph.links.contains_key(&(v.clone(), u.clone())));
+        assert!(!graph.links.contains_key(&(v.clone(), w.clone())));
+        assert!(!graph.links.contains_key(&(w, v)));
     }
 }

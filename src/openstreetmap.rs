@@ -5,8 +5,11 @@ use std::io::prelude::*;
 
 #[derive(Deserialize)]
 struct Node {
+    #[serde(rename = "@id")]
     id: String,
+    #[serde(rename = "@lat")]
     lat: String,
+    #[serde(rename = "@lon")]
     lon: String,
 }
 
@@ -18,6 +21,7 @@ struct Ways {
 
 #[derive(Deserialize)]
 struct NodeRef {
+    #[serde(rename = "@ref")]
     r#ref: String,
 }
 
@@ -42,7 +46,7 @@ pub fn format_xml() {
             way = true;
             data = "".to_owned();
         }
-        if node == true || way == true {
+        if node || way {
             data.push_str(&row);
         }
         if row.contains("</node>") {
@@ -58,10 +62,10 @@ pub fn format_xml() {
 
 fn extract_node(line: String, separator: char) -> String {
     let node: Node = from_str(&line).unwrap();
-    return format!(
+    format!(
         "{}{}{}{}{}",
         node.id, separator, node.lat, separator, node.lon
-    );
+    )
 }
 
 fn extract_link(line: String, separator: char) -> String {
@@ -76,7 +80,7 @@ fn extract_link(line: String, separator: char) -> String {
             nodes[i + 1].r#ref
         ));
     }
-    return output.join("");
+    output.join("")
 }
 
 pub fn extract(line: String, separator: char) {

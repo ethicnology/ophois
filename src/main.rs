@@ -60,7 +60,11 @@ enum Ophois {
 
 fn main() {
     match Ophois::parse() {
-        Ophois::Download { city, overpassql, user_agent } => download_map(city, overpassql, user_agent).unwrap(),
+        Ophois::Download {
+            city,
+            overpassql,
+            user_agent,
+        } => download_map(city, overpassql, user_agent).unwrap(),
         Ophois::Format => format_xml(),
         Ophois::Extract { separator } => {
             for line in io::stdin().lock().lines() {

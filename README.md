@@ -18,7 +18,7 @@ sudo mv ophois /usr/local/bin
 #### or build from sources
 
 ```sh
-cargo build --release # >= Rust 1.58
+cargo build --release # >= Rust 1.85 (edition 2024)
 # output should be in /target/release/ophois
 ```
 

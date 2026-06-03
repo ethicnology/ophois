@@ -13,21 +13,21 @@ pub fn haversine_distance(a: &Point, b: &Point) -> f64 {
     let a: f64 = ((d_lat / 2.0).sin()) * ((d_lat / 2.0).sin())
         + ((d_lon / 2.0).sin()) * ((d_lon / 2.0).sin()) * (lat1.cos()) * (lat2.cos());
     let c: f64 = 2.0 * ((a.sqrt()).atan2((1.0 - a).sqrt()));
-    return r * c;
+    r * c
 }
 
 pub fn midpoint(a: &Point, b: &Point) -> Point {
-    return Point {
+    Point {
         x: (a.x + b.x) / 2.0,
         y: (a.y + b.y) / 2.0,
-    };
+    }
 }
 
 pub fn get_point_from_line(a: &Point, b: &Point, part: f64) -> Point {
-    return Point {
+    Point {
         x: a.x + (part * (b.x - a.x)),
         y: a.y + (part * (b.y - a.y)),
-    };
+    }
 }
 
 #[cfg(test)]
