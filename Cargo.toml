@@ -18,4 +18,3 @@ clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = [ "derive" ] }
 quick-xml = { version = "0.40", features = [ "serialize" ] }
 rand = "0.10"
-openssl = { version = "0.10", features = ["vendored"] }
