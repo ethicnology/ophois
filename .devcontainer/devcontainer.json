@@ -1,0 +1,4 @@
+{
+  "name": "ophois-cross",
+  "build": { "dockerfile": "Dockerfile" }
+}
